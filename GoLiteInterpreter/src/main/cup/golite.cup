@@ -1,0 +1,130 @@
+package com.golite.parser;
+
+import java_cup.runtime.*;
+
+parser code {:
+    public void report_error(String message, Object info) {
+        if (info instanceof Symbol) {
+            Symbol s = (Symbol) info;
+            System.err.println("Error sintáctico: " + message +
+                " en línea " + s.left + ", columna " + s.right);
+        } else {
+            System.err.println("Error sintáctico: " + message);
+        }
+    }
+    public void report_fatal_error(String message, Object info) {
+        report_error(message, info);
+    }
+:};
+
+terminal VAR, FUNC, MAIN, IF, ELSE, FOR, BREAK, CONTINUE, RETURN;
+terminal NIL, UMINUS;
+terminal TINT, TFLOAT64, TSTRING, TBOOL, TRUNE;
+terminal PRINTLN, ATOI, PARSEFLOAT, TYPEOF;
+terminal PLUS, MINUS, TIMES, DIV, MOD;
+terminal ASSIGN, DECL_ASSIGN, PLUS_ASSIGN, MINUS_ASSIGN;
+terminal EQ, NEQ, LT, GT, LEQ, GEQ;
+terminal AND, OR, NOT;
+terminal LPAREN, RPAREN, LBRACE, RBRACE;
+terminal COMMA, SEMICOLON, DOT;
+terminal String      ID, STRING_LIT;
+terminal Integer     INT_LIT;
+terminal Double      FLOAT_LIT;
+terminal Boolean     TRUE, FALSE;
+terminal Character   RUNE_LIT;
+
+non terminal program;
+non terminal stmt_list, stmt;
+non terminal expr, expr_list;
+non terminal tipo;
+non terminal decl_stmt, assign_stmt, if_stmt, for_stmt;
+non terminal print_stmt;
+non terminal opt_semi;
+
+precedence left OR;
+precedence left AND;
+precedence left EQ, NEQ;
+precedence left LT, GT, LEQ, GEQ;
+precedence left PLUS, MINUS;
+precedence left TIMES, DIV, MOD;
+precedence right NOT, UMINUS;
+
+start with program;
+
+program ::= FUNC MAIN LPAREN RPAREN LBRACE stmt_list RBRACE;
+
+stmt_list ::= stmt_list stmt
+            |
+            ;
+
+opt_semi ::= SEMICOLON
+        |
+        ;
+
+stmt ::= decl_stmt   opt_semi
+    | assign_stmt opt_semi
+    | if_stmt
+    | for_stmt
+    | print_stmt  opt_semi
+    | BREAK       opt_semi
+    | CONTINUE    opt_semi
+    | LBRACE stmt_list RBRACE
+    ;
+
+decl_stmt ::= VAR ID tipo ASSIGN expr
+            | VAR ID tipo
+            | ID DECL_ASSIGN expr
+            ;
+
+tipo ::= TINT | TFLOAT64 | TSTRING | TBOOL | TRUNE;
+
+assign_stmt ::= ID ASSIGN      expr
+            | ID PLUS_ASSIGN  expr
+            | ID MINUS_ASSIGN expr
+            ;
+
+if_stmt ::= IF expr LBRACE stmt_list RBRACE
+        | IF expr LBRACE stmt_list RBRACE ELSE LBRACE stmt_list RBRACE
+        | IF expr LBRACE stmt_list RBRACE ELSE if_stmt
+        ;
+
+for_stmt ::= FOR expr LBRACE stmt_list RBRACE
+        | FOR decl_stmt SEMICOLON expr SEMICOLON assign_stmt LBRACE stmt_list RBRACE
+        ;
+
+print_stmt ::= PRINTLN LPAREN expr_list RPAREN
+            | PRINTLN LPAREN RPAREN
+            ;
+
+expr_list ::= expr_list COMMA expr
+            | expr
+            ;
+
+expr ::= expr PLUS   expr
+    | expr MINUS  expr
+    | expr TIMES  expr
+    | expr DIV    expr
+    | expr MOD    expr
+    | expr EQ     expr
+    | expr NEQ    expr
+    | expr LT     expr
+    | expr GT     expr
+    | expr LEQ    expr
+    | expr GEQ    expr
+    | expr AND    expr
+    | expr OR     expr
+    | NOT   expr
+    | MINUS expr                        %prec UMINUS
+    | LPAREN expr RPAREN
+    | INT_LIT
+    | FLOAT_LIT
+    | STRING_LIT
+    | TRUE
+    | FALSE
+    | NIL
+    | RUNE_LIT
+    | ID
+    | ATOI       LPAREN expr RPAREN
+    | PARSEFLOAT LPAREN expr RPAREN
+    | TYPEOF     LPAREN expr RPAREN DOT ID
+    ;
