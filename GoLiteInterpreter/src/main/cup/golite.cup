@@ -11,10 +11,13 @@ parser code {:
     public void report_error(String message, Object info) {
         if (info instanceof Symbol) {
             Symbol s = (Symbol) info;
-            System.err.println("Error sintáctico: " + message +
-                " en línea " + s.left + ", columna " + s.right);
+            String msg = "Error sintáctico cerca de '" + s.value + "'";
+            com.golite.interpreter.Interprete.getInstancia()
+                .agregarError(msg, s.left, s.right, "sintáctico");
+            System.err.println(msg + " línea " + s.left);
         } else {
-            System.err.println("Error sintáctico: " + message);
+            com.golite.interpreter.Interprete.getInstancia()
+                .agregarError(message, 0, 0, "sintáctico");
         }
     }
     public void report_fatal_error(String message, Object info) {

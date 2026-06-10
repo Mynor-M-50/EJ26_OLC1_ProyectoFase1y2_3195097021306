@@ -14,7 +14,6 @@ import java.nio.file.*;
 
 public class VentanaPrincipal extends JFrame {
 
-    // Componentes principales
     private JTextArea editorArea;
     private JTextArea consolaArea;
     private JLabel statusBar;
@@ -34,7 +33,6 @@ public class VentanaPrincipal extends JFrame {
     }
 
     private void crearComponentes() {
-        // Panel principal
         JPanel panelPrincipal = new JPanel(new BorderLayout());
 
         // ── EDITOR ──
@@ -45,7 +43,6 @@ public class VentanaPrincipal extends JFrame {
         editorArea.setCaretColor(Color.WHITE);
         editorArea.setTabSize(4);
 
-        // Números de línea
         JTextArea lineNumbers = new JTextArea("1");
         lineNumbers.setBackground(new Color(45, 45, 45));
         lineNumbers.setForeground(new Color(150, 150, 150));
@@ -53,7 +50,6 @@ public class VentanaPrincipal extends JFrame {
         lineNumbers.setEditable(false);
         lineNumbers.setMargin(new Insets(0, 5, 0, 5));
 
-        // Actualizar números de línea al escribir
         editorArea.addKeyListener(new KeyAdapter() {
             @Override
             public void keyReleased(KeyEvent e) {
@@ -66,9 +62,7 @@ public class VentanaPrincipal extends JFrame {
         editorScroll.setRowHeaderView(lineNumbers);
         editorScroll.setBorder(BorderFactory.createTitledBorder(
                 BorderFactory.createLineBorder(new Color(70, 70, 70)),
-                "Editor",
-                0, 0, null, Color.GRAY
-        ));
+                "Editor", 0, 0, null, Color.GRAY));
 
         // ── CONSOLA ──
         consolaArea = new JTextArea();
@@ -81,26 +75,19 @@ public class VentanaPrincipal extends JFrame {
         JScrollPane consolaScroll = new JScrollPane(consolaArea);
         consolaScroll.setBorder(BorderFactory.createTitledBorder(
                 BorderFactory.createLineBorder(new Color(70, 70, 70)),
-                "Consola",
-                0, 0, null, Color.GRAY
-        ));
+                "Consola", 0, 0, null, Color.GRAY));
         consolaScroll.setPreferredSize(new Dimension(0, 200));
 
-        // ── SPLIT PANE ──
-        JSplitPane splitPane = new JSplitPane(
-                JSplitPane.VERTICAL_SPLIT, editorScroll, consolaScroll
-        );
+        JSplitPane splitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT, editorScroll, consolaScroll);
         splitPane.setResizeWeight(0.7);
         splitPane.setDividerSize(5);
 
-        // ── STATUS BAR ──
         statusBar = new JLabel("  Listo  |  Línea: 1  Col: 1");
         statusBar.setFont(new Font("Monospaced", Font.PLAIN, 12));
         statusBar.setBorder(BorderFactory.createEmptyBorder(2, 5, 2, 5));
 
         panelPrincipal.add(splitPane, BorderLayout.CENTER);
         panelPrincipal.add(statusBar, BorderLayout.SOUTH);
-
         setContentPane(panelPrincipal);
     }
 
@@ -109,7 +96,6 @@ public class VentanaPrincipal extends JFrame {
 
         // ── ARCHIVO ──
         JMenu menuArchivo = new JMenu("Archivo");
-
         JMenuItem itemNuevo = new JMenuItem("Nuevo");
         itemNuevo.setAccelerator(KeyStroke.getKeyStroke("ctrl N"));
         itemNuevo.addActionListener(e -> nuevoArchivo());
@@ -133,7 +119,6 @@ public class VentanaPrincipal extends JFrame {
 
         // ── EJECUTAR ──
         JMenu menuEjecutar = new JMenu("Ejecutar");
-
         JMenuItem itemEjecutar = new JMenuItem("Ejecutar");
         itemEjecutar.setAccelerator(KeyStroke.getKeyStroke("F5"));
         itemEjecutar.addActionListener(e -> ejecutarCodigo());
@@ -146,7 +131,6 @@ public class VentanaPrincipal extends JFrame {
 
         // ── REPORTES ──
         JMenu menuReportes = new JMenu("Reportes");
-
         JMenuItem itemTokens = new JMenuItem("Tabla de Tokens");
         itemTokens.addActionListener(e -> mostrarTokens());
 
@@ -159,7 +143,6 @@ public class VentanaPrincipal extends JFrame {
         menuBar.add(menuArchivo);
         menuBar.add(menuEjecutar);
         menuBar.add(menuReportes);
-
         setJMenuBar(menuBar);
     }
 
@@ -218,7 +201,8 @@ public class VentanaPrincipal extends JFrame {
         }
 
         consolaArea.append("\n▶ Ejecutando...\n");
-        Interprete.resetear();
+        Interprete.getInstancia().limpiarErrores();
+        Interprete.getInstancia().limpiarTokens();
 
         try {
             Lexer lexer = new Lexer(new java.io.StringReader(codigo));
@@ -228,20 +212,32 @@ public class VentanaPrincipal extends JFrame {
             if (programa != null) {
                 String resultado = Interprete.getInstancia().ejecutar(programa);
                 consolaArea.append(resultado);
-                consolaArea.append("\n✓ Ejecución completada.\n");
+                if (Interprete.getInstancia().getErrores().isEmpty()) {
+                    consolaArea.append("\n✓ Ejecución completada.\n");
+                } else {
+                    consolaArea.append("\n⚠ Ejecución con " + Interprete.getInstancia().getErrores().size() + " error(es).\n");
+                }
             }
+        } catch (RuntimeException ex) {
+            String msg = ex.getMessage() != null ? ex.getMessage() : "Error desconocido";
+            consolaArea.append("✗ Error: " + msg + "\n");
+            Interprete.getInstancia().agregarError(msg, 0, 0, "semántico");
         } catch (Exception ex) {
-            consolaArea.append("✗ Error: " + ex.getMessage() + "\n");
+            String msg = ex.getMessage() != null ? ex.getMessage() : "Error desconocido";
+            consolaArea.append("✗ Error: " + msg + "\n");
+            Interprete.getInstancia().agregarError(msg, 0, 0, "sintáctico");
         }
     }
 
     private void mostrarTokens() {
         StringBuilder sb = new StringBuilder();
-        sb.append("No.  | Lexema          | Tipo            | Línea | Columna\n");
-        sb.append("-----|-----------------|-----------------|-------|--------\n");
+        sb.append(String.format("%-5s| %-20s| %-16s| %-6s| %s%n",
+                "No.", "Lexema", "Tipo", "Línea", "Columna"));
+        sb.append(String.format("%-5s|%-21s|%-17s|%-7s|%s%n",
+                "-----", "--------------------", "-----------------", "-------", "--------"));
         int i = 1;
         for (String[] token : Interprete.getInstancia().getTablaTokens()) {
-            sb.append(String.format("%-5d| %-16s| %-16s| %-6s| %s%n",
+            sb.append(String.format("%-5d| %-20s| %-16s| %-6s| %s%n",
                     i++, token[0], token[1], token[2], token[3]));
         }
         mostrarReporte("Tabla de Tokens", sb.toString());
@@ -249,12 +245,19 @@ public class VentanaPrincipal extends JFrame {
 
     private void mostrarErrores() {
         StringBuilder sb = new StringBuilder();
-        sb.append("No.  | Descripción                    | Línea | Col | Tipo\n");
-        sb.append("-----|--------------------------------|-------|-----|----------\n");
-        int i = 1;
-        for (var error : Interprete.getInstancia().getErrores()) {
-            sb.append(String.format("%-5d| %-31s| %-6d| %-4d| %s%n",
-                    i++, error.descripcion, error.linea, error.columna, error.tipo));
+        sb.append(String.format("%-5s| %-35s| %-6s| %-5s| %s%n",
+                "No.", "Descripción", "Línea", "Col", "Tipo"));
+        sb.append(String.format("%-5s|%-36s|%-7s|%-6s|%s%n",
+                "-----", "-----------------------------------", "-------", "------", "----------"));
+
+        if (Interprete.getInstancia().getErrores().isEmpty()) {
+            sb.append("\n  ✓ No se encontraron errores.\n");
+        } else {
+            int i = 1;
+            for (var error : Interprete.getInstancia().getErrores()) {
+                sb.append(String.format("%-5d| %-35s| %-6d| %-5d| %s%n",
+                        i++, error.descripcion, error.linea, error.columna, error.tipo));
+            }
         }
         mostrarReporte("Reporte de Errores", sb.toString());
     }
@@ -286,8 +289,9 @@ public class VentanaPrincipal extends JFrame {
         try {
             int pos = editorArea.getCaretPosition();
             int line = editorArea.getLineOfOffset(pos) + 1;
-            int col  = pos - editorArea.getLineStartOffset(line - 1) + 1;
+            int col = pos - editorArea.getLineStartOffset(line - 1) + 1;
             statusBar.setText("  Listo  |  Línea: " + line + "  Col: " + col);
         } catch (Exception ignored) {}
     }
 }
+

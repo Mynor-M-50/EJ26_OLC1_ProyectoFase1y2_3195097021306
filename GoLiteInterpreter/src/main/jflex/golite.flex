@@ -16,9 +16,21 @@ import java_cup.runtime.Symbol;
 %{
     public int getLine() { return yyline + 1; }
     public int getColumn() { return yycolumn + 1; }
+
+    private Symbol token(int tipo, String nombre, Object valor) {
+        com.golite.interpreter.Interprete.getInstancia()
+            .agregarToken(yytext(), nombre, yyline+1, yycolumn+1);
+        return new Symbol(tipo, yyline+1, yycolumn+1, valor);
+    }
+
+    private Symbol token(int tipo, String nombre) {
+        com.golite.interpreter.Interprete.getInstancia()
+            .agregarToken(yytext(), nombre, yyline+1, yycolumn+1);
+        return new Symbol(tipo, yyline+1, yycolumn+1);
+    }
 %}
 
-/* Definiciones */
+/* ── Definiciones de patrones ── */
 LineTerminator  = \r|\n|\r\n
 WhiteSpace      = {LineTerminator} | [ \t\f]
 Digit           = [0-9]
@@ -31,73 +43,87 @@ RuneLiteral     = \'([^\'\\\n]|\\.)\'
 
 %%
 
-/* Palabras reservadas */
-"var"           { return new Symbol(Sym.VAR,       yyline+1, yycolumn+1); }
-"func"          { return new Symbol(Sym.FUNC,      yyline+1, yycolumn+1); }
-"main"          { return new Symbol(Sym.MAIN,      yyline+1, yycolumn+1); }
-"if"            { return new Symbol(Sym.IF,        yyline+1, yycolumn+1); }
-"else"          { return new Symbol(Sym.ELSE,      yyline+1, yycolumn+1); }
-"for"           { return new Symbol(Sym.FOR,       yyline+1, yycolumn+1); }
-"break"         { return new Symbol(Sym.BREAK,     yyline+1, yycolumn+1); }
-"continue"      { return new Symbol(Sym.CONTINUE,  yyline+1, yycolumn+1); }
-"return"        { return new Symbol(Sym.RETURN,    yyline+1, yycolumn+1); }
-"true"          { return new Symbol(Sym.TRUE,      yyline+1, yycolumn+1, true); }
-"false"         { return new Symbol(Sym.FALSE,     yyline+1, yycolumn+1, false); }
-"nil"           { return new Symbol(Sym.NIL,       yyline+1, yycolumn+1); }
-"int"           { return new Symbol(Sym.TINT,      yyline+1, yycolumn+1); }
-"float64"       { return new Symbol(Sym.TFLOAT64,  yyline+1, yycolumn+1); }
-"string"        { return new Symbol(Sym.TSTRING,   yyline+1, yycolumn+1); }
-"bool"          { return new Symbol(Sym.TBOOL,     yyline+1, yycolumn+1); }
-"rune"          { return new Symbol(Sym.TRUNE,     yyline+1, yycolumn+1); }
-"fmt.Println"   { return new Symbol(Sym.PRINTLN,   yyline+1, yycolumn+1); }
-"strconv.Atoi"  { return new Symbol(Sym.ATOI,      yyline+1, yycolumn+1); }
-"strconv.ParseFloat" { return new Symbol(Sym.PARSEFLOAT, yyline+1, yycolumn+1); }
-"reflect.TypeOf" { return new Symbol(Sym.TYPEOF,   yyline+1, yycolumn+1); }
+/* ── Palabras reservadas ── */
+"var"                { return token(Sym.VAR,          "VAR"); }
+"func"               { return token(Sym.FUNC,         "FUNC"); }
+"main"               { return token(Sym.MAIN,         "MAIN"); }
+"if"                 { return token(Sym.IF,           "IF"); }
+"else"               { return token(Sym.ELSE,         "ELSE"); }
+"for"                { return token(Sym.FOR,          "FOR"); }
+"break"              { return token(Sym.BREAK,        "BREAK"); }
+"continue"           { return token(Sym.CONTINUE,     "CONTINUE"); }
+"return"             { return token(Sym.RETURN,       "RETURN"); }
+"true"               { return token(Sym.TRUE,         "TRUE",  true); }
+"false"              { return token(Sym.FALSE,        "FALSE", false); }
+"nil"                { return token(Sym.NIL,          "NIL"); }
 
-/* Operadores */
-":="            { return new Symbol(Sym.DECL_ASSIGN, yyline+1, yycolumn+1); }
-"=="            { return new Symbol(Sym.EQ,        yyline+1, yycolumn+1); }
-"!="            { return new Symbol(Sym.NEQ,       yyline+1, yycolumn+1); }
-"<="            { return new Symbol(Sym.LEQ,       yyline+1, yycolumn+1); }
-">="            { return new Symbol(Sym.GEQ,       yyline+1, yycolumn+1); }
-"&&"            { return new Symbol(Sym.AND,       yyline+1, yycolumn+1); }
-"||"            { return new Symbol(Sym.OR,        yyline+1, yycolumn+1); }
-"+="            { return new Symbol(Sym.PLUS_ASSIGN,  yyline+1, yycolumn+1); }
-"-="            { return new Symbol(Sym.MINUS_ASSIGN, yyline+1, yycolumn+1); }
-"+"             { return new Symbol(Sym.PLUS,      yyline+1, yycolumn+1); }
-"-"             { return new Symbol(Sym.MINUS,     yyline+1, yycolumn+1); }
-"*"             { return new Symbol(Sym.TIMES,     yyline+1, yycolumn+1); }
-"/"             { return new Symbol(Sym.DIV,       yyline+1, yycolumn+1); }
-"%"             { return new Symbol(Sym.MOD,       yyline+1, yycolumn+1); }
-"="             { return new Symbol(Sym.ASSIGN,    yyline+1, yycolumn+1); }
-"<"             { return new Symbol(Sym.LT,        yyline+1, yycolumn+1); }
-">"             { return new Symbol(Sym.GT,        yyline+1, yycolumn+1); }
-"!"             { return new Symbol(Sym.NOT,       yyline+1, yycolumn+1); }
+/* ── Tipos de datos ── */
+"int"                { return token(Sym.TINT,         "TINT"); }
+"float64"            { return token(Sym.TFLOAT64,     "TFLOAT64"); }
+"string"             { return token(Sym.TSTRING,      "TSTRING"); }
+"bool"               { return token(Sym.TBOOL,        "TBOOL"); }
+"rune"               { return token(Sym.TRUNE,        "TRUNE"); }
 
-/* Delimitadores */
-"("             { return new Symbol(Sym.LPAREN,    yyline+1, yycolumn+1); }
-")"             { return new Symbol(Sym.RPAREN,    yyline+1, yycolumn+1); }
-"{"             { return new Symbol(Sym.LBRACE,    yyline+1, yycolumn+1); }
-"}"             { return new Symbol(Sym.RBRACE,    yyline+1, yycolumn+1); }
-","             { return new Symbol(Sym.COMMA,     yyline+1, yycolumn+1); }
-";"             { return new Symbol(Sym.SEMICOLON, yyline+1, yycolumn+1); }
-"."             { return new Symbol(Sym.DOT,       yyline+1, yycolumn+1); }
+/* ── Funciones embebidas ── */
+"fmt.Println"        { return token(Sym.PRINTLN,      "PRINTLN"); }
+"strconv.Atoi"       { return token(Sym.ATOI,         "ATOI"); }
+"strconv.ParseFloat" { return token(Sym.PARSEFLOAT,   "PARSEFLOAT"); }
+"reflect.TypeOf"     { return token(Sym.TYPEOF,       "TYPEOF"); }
 
-/* Literales */
-{IntLiteral}    { return new Symbol(Sym.INT_LIT,   yyline+1, yycolumn+1, Integer.parseInt(yytext())); }
-{FloatLiteral}  { return new Symbol(Sym.FLOAT_LIT, yyline+1, yycolumn+1, Double.parseDouble(yytext())); }
-{StringLiteral} { return new Symbol(Sym.STRING_LIT,yyline+1, yycolumn+1, yytext().substring(1, yytext().length()-1)); }
-{RuneLiteral}   { return new Symbol(Sym.RUNE_LIT,  yyline+1, yycolumn+1, yytext().charAt(1)); }
+/* ── Operadores de comparación ── */
+"=="  { return token(Sym.EQ,           "EQ"); }
+"!="  { return token(Sym.NEQ,          "NEQ"); }
+"<="  { return token(Sym.LEQ,          "LEQ"); }
+">="  { return token(Sym.GEQ,          "GEQ"); }
+"<"   { return token(Sym.LT,           "LT"); }
+">"   { return token(Sym.GT,           "GT"); }
 
-/* Identificadores */
-{Identifier}    { return new Symbol(Sym.ID,        yyline+1, yycolumn+1, yytext()); }
+/* ── Operadores lógicos ── */
+"&&"  { return token(Sym.AND,          "AND"); }
+"||"  { return token(Sym.OR,           "OR"); }
+"!"   { return token(Sym.NOT,          "NOT"); }
 
-/* Comentarios */
-"//"[^\n]*      { /* ignorar comentario de línea */ }
-"/*"([^*]|\*+[^*/])*\*+"/" { /* ignorar comentario multilínea */ }
+/* ── Operadores de asignación ── */
+":="  { return token(Sym.DECL_ASSIGN,  "DECL_ASSIGN"); }
+"+="  { return token(Sym.PLUS_ASSIGN,  "PLUS_ASSIGN"); }
+"-="  { return token(Sym.MINUS_ASSIGN, "MINUS_ASSIGN"); }
+"="   { return token(Sym.ASSIGN,       "ASSIGN"); }
 
-/* Espacios en blanco */
-{WhiteSpace}    { /* ignorar */ }
+/* ── Operadores aritméticos ── */
+"+"   { return token(Sym.PLUS,         "PLUS"); }
+"-"   { return token(Sym.MINUS,        "MINUS"); }
+"*"   { return token(Sym.TIMES,        "TIMES"); }
+"/"   { return token(Sym.DIV,          "DIV"); }
+"%"   { return token(Sym.MOD,          "MOD"); }
 
-/* Error léxico */
-[^]             { System.err.println("Error léxico: carácter no reconocido '" + yytext() + "' en línea " + (yyline+1) + ", columna " + (yycolumn+1)); }
+/* ── Delimitadores ── */
+"("   { return token(Sym.LPAREN,    "LPAREN"); }
+")"   { return token(Sym.RPAREN,    "RPAREN"); }
+"{"   { return token(Sym.LBRACE,    "LBRACE"); }
+"}"   { return token(Sym.RBRACE,    "RBRACE"); }
+","   { return token(Sym.COMMA,     "COMMA"); }
+";"   { return token(Sym.SEMICOLON, "SEMICOLON"); }
+"."   { return token(Sym.DOT,       "DOT"); }
+
+/* ── Literales ── */
+{IntLiteral}    { return token(Sym.INT_LIT,    "INT_LIT",    Integer.parseInt(yytext())); }
+{FloatLiteral}  { return token(Sym.FLOAT_LIT,  "FLOAT_LIT",  Double.parseDouble(yytext())); }
+{StringLiteral} { return token(Sym.STRING_LIT, "STRING_LIT", yytext().substring(1, yytext().length()-1)); }
+{RuneLiteral}   { return token(Sym.RUNE_LIT,   "RUNE_LIT",   yytext().charAt(1)); }
+
+/* ── Identificadores ── */
+{Identifier}    { return token(Sym.ID, "ID", yytext()); }
+
+/* ── Comentarios (se ignoran) ── */
+"//"[^\n]*                  { /* comentario de línea */ }
+"/*"([^*]|\*+[^*/])*\*+"/" { /* comentario de bloque */ }
+
+/* ── Espacios en blanco (se ignoran) ── */
+{WhiteSpace} { /* ignorar */ }
+
+/* ── Error léxico ── */
+[^] {
+    com.golite.interpreter.Interprete.getInstancia()
+        .agregarError("Carácter no reconocido: '" + yytext() + "'", yyline+1, yycolumn+1, "léxico");
+    System.err.println("Error léxico: '" + yytext() + "' línea " + (yyline+1));
+}

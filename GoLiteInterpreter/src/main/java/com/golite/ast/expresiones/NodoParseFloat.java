@@ -18,7 +18,9 @@ public class NodoParseFloat extends NodoAST {
         try {
             return Double.parseDouble((String) val);
         } catch (NumberFormatException e) {
-            throw new RuntimeException("strconv.ParseFloat: no se puede convertir '" + val + "', linea " + linea);
+            String msg = "strconv.ParseFloat: no se puede convertir '" + val + "', línea " + linea;
+            com.golite.interpreter.Interprete.getInstancia().agregarError(msg, linea, columna, "semántico");
+            throw new RuntimeException(msg);
         }
     }
 }

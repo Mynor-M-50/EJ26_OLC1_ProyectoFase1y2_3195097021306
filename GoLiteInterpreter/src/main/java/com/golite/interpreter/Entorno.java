@@ -5,7 +5,7 @@ import java.util.Map;
 
 public class Entorno {
 
-    // Singleton una sola instancia global
+    // Singleton — una sola instancia global
     private static Entorno instancia;
 
     public static Entorno getInstancia() {
@@ -29,7 +29,7 @@ public class Entorno {
     }
 
     private final Map<String, Variable> tabla;
-    private final Entorno padre; // entorno anterior (null si es global)
+    private final Entorno padre;
 
     public Entorno(Entorno padre) {
         this.tabla = new HashMap<>();
@@ -41,38 +41,43 @@ public class Entorno {
         return new Entorno(this);
     }
 
-    // Declarar una variable en el entorno actual
+    // ── Declarar variable ──
     public void declarar(String nombre, String tipo, Object valor, int linea, int columna) {
-        if (tabla.containsKey(nombre))
-            throw new RuntimeException("Variable '" + nombre + "' ya declarada en este ámbito, línea " + linea);
+        if (tabla.containsKey(nombre)) {
+            String msg = "Variable '" + nombre + "' ya declarada en este ámbito, línea " + linea;
+            Interprete.getInstancia().agregarError(msg, linea, columna, "semántico");
+            throw new RuntimeException(msg);
+        }
         tabla.put(nombre, new Variable(tipo, valor));
     }
 
-    // Obtener el valor de una variable
+    // ── Obtener valor ──
     public Object obtener(String nombre, int linea, int columna) {
         if (tabla.containsKey(nombre))
             return tabla.get(nombre).valor;
         if (padre != null)
             return padre.obtener(nombre, linea, columna);
-        throw new RuntimeException("Variable '" + nombre + "' no declarada, línea " + linea);
+        String msg = "Variable '" + nombre + "' no declarada, línea " + linea;
+        Interprete.getInstancia().agregarError(msg, linea, columna, "semántico");
+        throw new RuntimeException(msg);
     }
 
-    // Obtener el tipo de una variable
+    // ── Obtener tipo ──
     public String obtenerTipo(String nombre, int linea, int columna) {
         if (tabla.containsKey(nombre))
             return tabla.get(nombre).tipo;
         if (padre != null)
             return padre.obtenerTipo(nombre, linea, columna);
-        throw new RuntimeException("Variable '" + nombre + "' no declarada, línea " + linea);
+        String msg = "Variable '" + nombre + "' no declarada, línea " + linea;
+        Interprete.getInstancia().agregarError(msg, linea, columna, "semántico");
+        throw new RuntimeException(msg);
     }
 
-    // Asignar un nuevo valor a una variable ya declarada
+    // ── Asignar valor ──
     public void asignar(String nombre, Object valor, int linea, int columna) {
         if (tabla.containsKey(nombre)) {
             Variable var = tabla.get(nombre);
-
-            // Verificar compatibilidad de tipos
-            verificarTipo(var.tipo, valor, linea);
+            verificarTipo(var.tipo, valor, linea, columna);
             var.valor = valor;
             return;
         }
@@ -80,37 +85,44 @@ public class Entorno {
             padre.asignar(nombre, valor, linea, columna);
             return;
         }
-        throw new RuntimeException("Variable '" + nombre + "' no declarada, línea " + linea);
+        String msg = "Variable '" + nombre + "' no declarada, línea " + linea;
+        Interprete.getInstancia().agregarError(msg, linea, columna, "semántico");
+        throw new RuntimeException(msg);
     }
 
-    // Verificar que el tipo sea compatible
-    private void verificarTipo(String tipo, Object valor, int linea) {
+    // ── Verificar compatibilidad de tipos ──
+    private void verificarTipo(String tipo, Object valor, int linea, int columna) {
         if (valor == null) return;
+        String msg = null;
         switch (tipo) {
             case "int":
                 if (!(valor instanceof Integer))
-                    throw new RuntimeException("Tipo incompatible: se esperaba int, línea " + linea);
+                    msg = "Tipo incompatible: se esperaba int, línea " + linea;
                 break;
             case "float64":
                 if (!(valor instanceof Double) && !(valor instanceof Integer))
-                    throw new RuntimeException("Tipo incompatible: se esperaba float64, línea " + linea);
+                    msg = "Tipo incompatible: se esperaba float64, línea " + linea;
                 break;
             case "string":
                 if (!(valor instanceof String))
-                    throw new RuntimeException("Tipo incompatible: se esperaba string, línea " + linea);
+                    msg = "Tipo incompatible: se esperaba string, línea " + linea;
                 break;
             case "bool":
                 if (!(valor instanceof Boolean))
-                    throw new RuntimeException("Tipo incompatible: se esperaba bool, línea " + linea);
+                    msg = "Tipo incompatible: se esperaba bool, línea " + linea;
                 break;
             case "rune":
                 if (!(valor instanceof Character))
-                    throw new RuntimeException("Tipo incompatible: se esperaba rune, línea " + linea);
+                    msg = "Tipo incompatible: se esperaba rune, línea " + linea;
                 break;
+        }
+        if (msg != null) {
+            Interprete.getInstancia().agregarError(msg, linea, columna, "semántico");
+            throw new RuntimeException(msg);
         }
     }
 
-    // Obtener toda la tabla para el reporte de símbolos
+    // ── Obtener tabla completa para reportes ──
     public Map<String, Object[]> obtenerTabla() {
         Map<String, Object[]> resultado = new HashMap<>();
         for (Map.Entry<String, Variable> entry : tabla.entrySet())

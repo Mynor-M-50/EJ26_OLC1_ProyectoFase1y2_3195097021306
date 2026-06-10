@@ -18,8 +18,11 @@ public class NodoModulo extends NodoAST {
         Object der = derecha.interpretar();
 
         if (izq instanceof Integer && der instanceof Integer) {
-            if ((Integer) der == 0)
-                throw new RuntimeException("Modulo por cero, linea " + linea);
+            if ((Integer) der == 0) {
+                String msg = "Modulo por cero, linea " + linea;
+                com.golite.interpreter.Interprete.getInstancia().agregarError(msg, linea, columna, "semántico");
+                throw new RuntimeException(msg);
+            }
             return (Integer) izq % (Integer) der;
         }
 

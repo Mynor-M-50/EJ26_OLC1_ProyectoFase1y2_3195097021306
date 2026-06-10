@@ -39,13 +39,20 @@ public class Interprete {
         try {
             programa.interpretar();
         } catch (RuntimeException e) {
-            consola.append("Error: ").append(e.getMessage()).append("\n");
+            String msg = e.getMessage() != null ? e.getMessage() : "Error desconocido";
+            consola.append("Error: ").append(msg).append("\n");
+            // Solo agregar si no fue ya registrado por los nodos
+            boolean yaRegistrado = errores.stream()
+                    .anyMatch(err -> err.descripcion.equals(msg));
+            if (!yaRegistrado) {
+                errores.add(new ErrorSemantic(msg, 0, 0, "semántico"));
+            }
         }
 
         return consola.toString();
     }
 
-    // Agregar linea a la consola
+    // Agregar línea a la consola
     public void agregarConsola(String texto) {
         consola.append(texto).append("\n");
     }
