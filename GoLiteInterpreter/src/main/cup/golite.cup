@@ -1,6 +1,11 @@
 package com.golite.parser;
 
 import java_cup.runtime.*;
+import com.golite.ast.NodoAST;
+import com.golite.ast.sentencias.*;
+import com.golite.ast.expresiones.*;
+import java.util.ArrayList;
+import java.util.List;
 
 parser code {:
     public void report_error(String message, Object info) {
@@ -33,13 +38,18 @@ terminal Double      FLOAT_LIT;
 terminal Boolean     TRUE, FALSE;
 terminal Character   RUNE_LIT;
 
-non terminal program;
-non terminal stmt_list, stmt;
-non terminal expr, expr_list;
-non terminal tipo;
-non terminal decl_stmt, assign_stmt, if_stmt, for_stmt;
-non terminal print_stmt;
-non terminal opt_semi;
+non terminal NodoPrograma        program;
+non terminal List<NodoAST>       stmt_list;
+non terminal NodoAST             stmt;
+non terminal NodoAST             expr;
+non terminal List<NodoAST>       expr_list;
+non terminal String              tipo;
+non terminal NodoAST             decl_stmt;
+non terminal NodoAsignacion      assign_stmt;
+non terminal NodoIf              if_stmt;
+non terminal NodoAST             for_stmt;
+non terminal NodoAST             print_stmt;
+non terminal String              opt_semi;
 
 precedence left OR;
 precedence left AND;
@@ -51,80 +61,106 @@ precedence right NOT, UMINUS;
 
 start with program;
 
-program ::= FUNC MAIN LPAREN RPAREN LBRACE stmt_list RBRACE;
+program ::= FUNC MAIN LPAREN RPAREN LBRACE stmt_list:s RBRACE
+            {: RESULT = new NodoPrograma(s); :}
+          ;
 
-stmt_list ::= stmt_list stmt
+stmt_list ::= stmt_list:sl stmt:s
+              {: sl.add(s); RESULT = sl; :}
             |
+              {: RESULT = new ArrayList<>(); :}
             ;
 
-opt_semi ::= SEMICOLON
-        |
-        ;
+opt_semi ::= SEMICOLON | ;
 
-stmt ::= decl_stmt   opt_semi
-    | assign_stmt opt_semi
-    | if_stmt
-    | for_stmt
-    | print_stmt  opt_semi
-    | BREAK       opt_semi
-    | CONTINUE    opt_semi
-    | LBRACE stmt_list RBRACE
-    ;
+stmt ::= decl_stmt:d   opt_semi  {: RESULT = d; :}
+       | assign_stmt:a opt_semi  {: RESULT = a; :}
+       | if_stmt:i               {: RESULT = i; :}
+       | for_stmt:f              {: RESULT = f; :}
+       | print_stmt:p  opt_semi  {: RESULT = p; :}
+       | BREAK:b        opt_semi {: RESULT = new NodoBreak(bleft, bright); :}
+       | CONTINUE:c     opt_semi {: RESULT = new NodoContinue(cleft, cright); :}
+       | LBRACE stmt_list:sl RBRACE
+         {: RESULT = new NodoBloque(sl, 0, 0); :}
+       ;
 
-decl_stmt ::= VAR ID tipo ASSIGN expr
-            | VAR ID tipo
-            | ID DECL_ASSIGN expr
+decl_stmt ::= VAR ID:n tipo:t ASSIGN expr:e
+              {: RESULT = new NodoDeclaracion(n, t, e, nleft, nright); :}
+            | VAR ID:n tipo:t
+              {: RESULT = new NodoDeclaracion(n, t, null, nleft, nright); :}
+            | ID:n DECL_ASSIGN expr:e
+              {: RESULT = new NodoDeclaracion(n, null, e, nleft, nright); :}
             ;
 
-tipo ::= TINT | TFLOAT64 | TSTRING | TBOOL | TRUNE;
+tipo ::= TINT      {: RESULT = "int"; :}
+       | TFLOAT64  {: RESULT = "float64"; :}
+       | TSTRING   {: RESULT = "string"; :}
+       | TBOOL     {: RESULT = "bool"; :}
+       | TRUNE     {: RESULT = "rune"; :}
+       ;
 
-assign_stmt ::= ID ASSIGN      expr
-            | ID PLUS_ASSIGN  expr
-            | ID MINUS_ASSIGN expr
+assign_stmt ::= ID:n ASSIGN expr:e
+                {: RESULT = new NodoAsignacion(n, "=", e, nleft, nright); :}
+              | ID:n PLUS_ASSIGN expr:e
+                {: RESULT = new NodoAsignacion(n, "+=", e, nleft, nright); :}
+              | ID:n MINUS_ASSIGN expr:e
+                {: RESULT = new NodoAsignacion(n, "-=", e, nleft, nright); :}
+              ;
+
+if_stmt ::= IF expr:c LBRACE stmt_list:t RBRACE
+            {: RESULT = new NodoIf(c, t, null, null, cleft, cright); :}
+          | IF expr:c LBRACE stmt_list:t RBRACE ELSE LBRACE stmt_list:e RBRACE
+            {: RESULT = new NodoIf(c, t, e, null, cleft, cright); :}
+          | IF expr:c LBRACE stmt_list:t RBRACE ELSE if_stmt:ei
+            {: RESULT = new NodoIf(c, t, null, ei, cleft, cright); :}
+          ;
+
+for_stmt ::= FOR expr:c LBRACE stmt_list:b RBRACE
+             {: RESULT = new NodoFor(c, null, null, b, cleft, cright); :}
+           | FOR decl_stmt:i SEMICOLON expr:c SEMICOLON assign_stmt:u LBRACE stmt_list:b RBRACE
+             {: RESULT = new NodoFor(c, i, u, b, cleft, cright); :}
+           ;
+
+print_stmt ::= PRINTLN:p LPAREN expr_list:args RPAREN
+               {: RESULT = new NodoPrintln(args, pleft, pright); :}
+             | PRINTLN:p LPAREN RPAREN
+               {: RESULT = new NodoPrintln(new ArrayList<>(), pleft, pright); :}
+             ;
+
+expr_list ::= expr_list:el COMMA expr:e
+              {: el.add(e); RESULT = el; :}
+            | expr:e
+              {: List<NodoAST> l = new ArrayList<>(); l.add(e); RESULT = l; :}
             ;
 
-if_stmt ::= IF expr LBRACE stmt_list RBRACE
-        | IF expr LBRACE stmt_list RBRACE ELSE LBRACE stmt_list RBRACE
-        | IF expr LBRACE stmt_list RBRACE ELSE if_stmt
-        ;
-
-for_stmt ::= FOR expr LBRACE stmt_list RBRACE
-        | FOR decl_stmt SEMICOLON expr SEMICOLON assign_stmt LBRACE stmt_list RBRACE
-        ;
-
-print_stmt ::= PRINTLN LPAREN expr_list RPAREN
-            | PRINTLN LPAREN RPAREN
-            ;
-
-expr_list ::= expr_list COMMA expr
-            | expr
-            ;
-
-expr ::= expr PLUS   expr
-    | expr MINUS  expr
-    | expr TIMES  expr
-    | expr DIV    expr
-    | expr MOD    expr
-    | expr EQ     expr
-    | expr NEQ    expr
-    | expr LT     expr
-    | expr GT     expr
-    | expr LEQ    expr
-    | expr GEQ    expr
-    | expr AND    expr
-    | expr OR     expr
-    | NOT   expr
-    | MINUS expr                        %prec UMINUS
-    | LPAREN expr RPAREN
-    | INT_LIT
-    | FLOAT_LIT
-    | STRING_LIT
-    | TRUE
-    | FALSE
-    | NIL
-    | RUNE_LIT
-    | ID
-    | ATOI       LPAREN expr RPAREN
-    | PARSEFLOAT LPAREN expr RPAREN
-    | TYPEOF     LPAREN expr RPAREN DOT ID
-    ;
+expr ::= expr:a PLUS   expr:b  {: RESULT = new NodoSuma(a, b, aleft, aright); :}
+       | expr:a MINUS  expr:b  {: RESULT = new NodoResta(a, b, aleft, aright); :}
+       | expr:a TIMES  expr:b  {: RESULT = new NodoMultiplicacion(a, b, aleft, aright); :}
+       | expr:a DIV    expr:b  {: RESULT = new NodoDivision(a, b, aleft, aright); :}
+       | expr:a MOD    expr:b  {: RESULT = new NodoModulo(a, b, aleft, aright); :}
+       | expr:a EQ     expr:b  {: RESULT = new NodoComparacion(a, "==", b, aleft, aright); :}
+       | expr:a NEQ    expr:b  {: RESULT = new NodoComparacion(a, "!=", b, aleft, aright); :}
+       | expr:a LT     expr:b  {: RESULT = new NodoComparacion(a, "<",  b, aleft, aright); :}
+       | expr:a GT     expr:b  {: RESULT = new NodoComparacion(a, ">",  b, aleft, aright); :}
+       | expr:a LEQ    expr:b  {: RESULT = new NodoComparacion(a, "<=", b, aleft, aright); :}
+       | expr:a GEQ    expr:b  {: RESULT = new NodoComparacion(a, ">=", b, aleft, aright); :}
+       | expr:a AND    expr:b  {: RESULT = new NodoLogico(a, "&&", b, aleft, aright); :}
+       | expr:a OR     expr:b  {: RESULT = new NodoLogico(a, "||", b, aleft, aright); :}
+       | NOT expr:a            {: RESULT = new NodoLogico(a, "!", null, aleft, aright); :}
+       | MINUS expr:a          {: RESULT = new NodoNegacion(a, aleft, aright); :} %prec UMINUS
+       | LPAREN expr:e RPAREN  {: RESULT = e; :}
+       | INT_LIT:v             {: RESULT = new NodoEntero(v, vleft, vright); :}
+       | FLOAT_LIT:v           {: RESULT = new NodoDecimal(v, vleft, vright); :}
+       | STRING_LIT:v          {: RESULT = new NodoString(v, vleft, vright); :}
+       | TRUE:v                {: RESULT = new NodoBooleano(true,  vleft, vright); :}
+       | FALSE:v               {: RESULT = new NodoBooleano(false, vleft, vright); :}
+       | NIL:v                 {: RESULT = new NodoEntero(0, vleft, vright); :}
+       | RUNE_LIT:v            {: RESULT = new NodoRune(v, vleft, vright); :}
+       | ID:v                  {: RESULT = new NodoIdentificador(v, vleft, vright); :}
+       | ATOI:p LPAREN expr:e RPAREN
+         {: RESULT = new NodoAtoi(e, pleft, pright); :}
+       | PARSEFLOAT:p LPAREN expr:e RPAREN
+         {: RESULT = new NodoParseFloat(e, pleft, pright); :}
+       | TYPEOF:p LPAREN expr:e RPAREN DOT ID
+         {: RESULT = new NodoTypeOf(e, pleft, pright); :}
+       ;

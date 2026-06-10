@@ -45,7 +45,7 @@ public class Interprete {
         return consola.toString();
     }
 
-    // Agregar línea a la consola
+    // Agregar linea a la consola
     public void agregarConsola(String texto) {
         consola.append(texto).append("\n");
     }

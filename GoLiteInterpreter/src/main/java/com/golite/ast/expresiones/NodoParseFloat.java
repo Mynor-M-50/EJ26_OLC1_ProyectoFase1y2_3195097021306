@@ -1,4 +1,4 @@
-package com.golite.ast.sentencias;
+package com.golite.ast.expresiones;
 
 import com.golite.ast.NodoAST;
 

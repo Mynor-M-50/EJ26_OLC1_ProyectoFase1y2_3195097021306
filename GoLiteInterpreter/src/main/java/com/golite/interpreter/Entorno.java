@@ -5,7 +5,7 @@ import java.util.Map;
 
 public class Entorno {
 
-    // Singleton — una sola instancia global
+    // Singleton una sola instancia global
     private static Entorno instancia;
 
     public static Entorno getInstancia() {

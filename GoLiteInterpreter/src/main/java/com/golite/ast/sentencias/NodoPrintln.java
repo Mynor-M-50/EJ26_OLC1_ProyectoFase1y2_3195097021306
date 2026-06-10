@@ -22,8 +22,9 @@ public class NodoPrintln extends NodoAST {
                 sb.append(" ");
         }
 
-        System.out.println(sb.toString());
-        return sb.toString();
+        String resultado = sb.toString();
+        com.golite.interpreter.Interprete.getInstancia().agregarConsola(resultado);
+        return resultado;
     }
 
     private String formatear(Object val) {
