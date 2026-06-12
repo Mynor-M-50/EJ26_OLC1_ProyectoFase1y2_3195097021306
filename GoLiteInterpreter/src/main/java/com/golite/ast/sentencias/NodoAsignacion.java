@@ -44,7 +44,7 @@ public class NodoAsignacion extends NodoAST {
                     double b = nuevoValor instanceof Integer ? ((Integer) nuevoValor).doubleValue() : (Double) nuevoValor;
                     Entorno.getInstancia().asignar(nombre, a - b, linea, columna);
                 } else
-                    throw new RuntimeException("Operacion -= invalida, línea " + linea);
+                    throw new RuntimeException("Operacion -= invalida, linea " + linea);
                 break;
         }
         return null;

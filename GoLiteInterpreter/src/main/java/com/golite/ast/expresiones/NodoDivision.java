@@ -19,17 +19,17 @@ public class NodoDivision extends NodoAST {
 
         if (izq instanceof Integer && der instanceof Integer) {
             if ((Integer) der == 0)
-                throw new RuntimeException("División por cero, línea " + linea);
+                throw new RuntimeException("Division por cero, linea " + linea);
             return (Integer) izq / (Integer) der;
         }
 
         if (izq instanceof Double || der instanceof Double) {
             double a = izq instanceof Integer ? ((Integer) izq).doubleValue() : (Double) izq;
             double b = der instanceof Integer ? ((Integer) der).doubleValue() : (Double) der;
-            if (b == 0) throw new RuntimeException("División por cero, línea " + linea);
+            if (b == 0) throw new RuntimeException("Division por cero, linea " + linea);
             return a / b;
         }
 
-        throw new RuntimeException("Operación inválida en división, línea " + linea);
+        throw new RuntimeException("Operacin invalida en division, linea " + linea);
     }
 }

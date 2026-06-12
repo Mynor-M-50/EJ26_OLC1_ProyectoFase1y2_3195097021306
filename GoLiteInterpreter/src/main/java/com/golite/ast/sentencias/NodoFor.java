@@ -20,33 +20,39 @@ public class NodoFor extends NodoAST {
 
     @Override
     public Object interpretar() {
-        if (inicializacion != null)
-            inicializacion.interpretar();
+        // El for clasico necesita su propio scope para la variable de init
+        boolean tieneInit = (inicializacion != null);
+        if (tieneInit) Entorno.pushBloque();
 
-        while (true) {
-            Object cond = condicion.interpretar();
+        try {
+            if (inicializacion != null)
+                inicializacion.interpretar();
 
-            if (!(cond instanceof Boolean))
-                throw new RuntimeException("Condicion del for debe ser booleana, linea " + linea);
+            while (true) {
+                Object cond = condicion.interpretar();
 
-            if (!(Boolean) cond) break;
+                if (!(cond instanceof Boolean))
+                    throw new RuntimeException("Condicion del for debe ser booleana, linea " + linea);
 
-            // ── push scope para el cuerpo de cada iteración ──
-            Entorno.pushBloque();
-            try {
-                for (NodoAST s : cuerpo)
-                    s.interpretar();
-            } catch (BreakException e) {
-                Entorno.popBloque();
-                break;
-            } catch (ContinueException e) {
-                // continua, pero igual hay que limpiar el scope
-            } finally {
-                Entorno.popBloque();
+                if (!(Boolean) cond) break;
+
+                Entorno.pushBloque();
+                try {
+                    for (NodoAST s : cuerpo)
+                        s.interpretar();
+                } catch (BreakException e) {
+                    break;
+                } catch (ContinueException e) {
+                    // continua pero limpia el scope del cuerpo
+                } finally {
+                    Entorno.popBloque();
+                }
+
+                if (actualizacion != null)
+                    actualizacion.interpretar();
             }
-
-            if (actualizacion != null)
-                actualizacion.interpretar();
+        } finally {
+            if (tieneInit) Entorno.popBloque();
         }
 
         return null;

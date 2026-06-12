@@ -20,7 +20,7 @@ public class NodoModulo extends NodoAST {
         if (izq instanceof Integer && der instanceof Integer) {
             if ((Integer) der == 0) {
                 String msg = "Modulo por cero, linea " + linea;
-                com.golite.interpreter.Interprete.getInstancia().agregarError(msg, linea, columna, "semántico");
+                com.golite.interpreter.Interprete.getInstancia().agregarError(msg, linea, columna, "semantico");
                 throw new RuntimeException(msg);
             }
             return (Integer) izq % (Integer) der;

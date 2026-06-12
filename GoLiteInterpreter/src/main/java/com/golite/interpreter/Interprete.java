@@ -45,14 +45,14 @@ public class Interprete {
             boolean yaRegistrado = errores.stream()
                     .anyMatch(err -> err.descripcion.equals(msg));
             if (!yaRegistrado) {
-                errores.add(new ErrorSemantic(msg, 0, 0, "semántico"));
+                errores.add(new ErrorSemantic(msg, 0, 0, "semantico"));
             }
         }
 
         return consola.toString();
     }
 
-    // Agregar línea a la consola
+    // Agregar linea a la consola
     public void agregarConsola(String texto) {
         consola.append(texto).append("\n");
     }

@@ -26,6 +26,6 @@ public class NodoResta extends NodoAST {
             return a - b;
         }
 
-        throw new RuntimeException("Operación invalida en resta, linea " + linea);
+        throw new RuntimeException("Operacion invalida en resta, linea " + linea);
     }
 }

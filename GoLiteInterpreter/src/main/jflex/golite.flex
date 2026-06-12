@@ -70,7 +70,7 @@ RuneLiteral     = \'([^\'\\\n]|\\.)\'
 "strconv.ParseFloat" { return token(Sym.PARSEFLOAT,   "PARSEFLOAT"); }
 "reflect.TypeOf"     { return token(Sym.TYPEOF,       "TYPEOF"); }
 
-/* ── Operadores de comparación ── */
+/* ── Operadores de comparacin ── */
 "=="  { return token(Sym.EQ,           "EQ"); }
 "!="  { return token(Sym.NEQ,          "NEQ"); }
 "<="  { return token(Sym.LEQ,          "LEQ"); }
@@ -78,18 +78,20 @@ RuneLiteral     = \'([^\'\\\n]|\\.)\'
 "<"   { return token(Sym.LT,           "LT"); }
 ">"   { return token(Sym.GT,           "GT"); }
 
-/* ── Operadores lógicos ── */
+/* ── Operadores logicos ── */
 "&&"  { return token(Sym.AND,          "AND"); }
 "||"  { return token(Sym.OR,           "OR"); }
 "!"   { return token(Sym.NOT,          "NOT"); }
 
-/* ── Operadores de asignación ── */
+/* ── Operadores de asignacion ── */
 ":="  { return token(Sym.DECL_ASSIGN,  "DECL_ASSIGN"); }
 "+="  { return token(Sym.PLUS_ASSIGN,  "PLUS_ASSIGN"); }
 "-="  { return token(Sym.MINUS_ASSIGN, "MINUS_ASSIGN"); }
 "="   { return token(Sym.ASSIGN,       "ASSIGN"); }
 
-/* ── Operadores aritméticos ── */
+/* ── Operadores aritmeticos ── */
+"++"  { return token(Sym.INC,          "INC"); }
+"--"  { return token(Sym.DEC,          "DEC"); }
 "+"   { return token(Sym.PLUS,         "PLUS"); }
 "-"   { return token(Sym.MINUS,        "MINUS"); }
 "*"   { return token(Sym.TIMES,        "TIMES"); }
@@ -118,10 +120,10 @@ RuneLiteral     = \'([^\'\\\n]|\\.)\'
 "//"[^\n]*                  { /* comentario de línea */ }
 "/*"([^*]|\*+[^*/])*\*+"/" { /* comentario de bloque */ }
 
-/* ── Espacios en blanco (se ignoran) ── */
+/* ── Espacios en blanco (debpo ignorarlos) ── */
 {WhiteSpace} { /* ignorar */ }
 
-/* ── Error léxico ── */
+/* ── Error lexico ── */
 [^] {
     com.golite.interpreter.Interprete.getInstancia()
         .agregarError("Carácter no reconocido: '" + yytext() + "'", yyline+1, yycolumn+1, "léxico");

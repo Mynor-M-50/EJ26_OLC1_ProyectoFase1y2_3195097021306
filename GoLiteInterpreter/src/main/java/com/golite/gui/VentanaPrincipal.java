@@ -57,7 +57,7 @@ public class VentanaPrincipal extends JFrame {
         inicializarVentana();
         crearComponentes();
         crearMenu();
-        // Abrir con una tab vacía por defecto
+        // Abrir con una tab vaciia por defecto
         nuevaTab();
     }
 
@@ -71,13 +71,13 @@ public class VentanaPrincipal extends JFrame {
     private void crearComponentes() {
         JPanel panelPrincipal = new JPanel(new BorderLayout());
 
-        // ── TABS ──
+        // TABS
         tabbedPane = new JTabbedPane();
         tabbedPane.setBackground(new Color(45, 45, 45));
         tabbedPane.setForeground(Color.WHITE);
         tabbedPane.addChangeListener(e -> actualizarStatusBar());
 
-        // ── CONSOLA ──
+        // CONSOLA
         consolaArea = new JTextArea();
         consolaArea.setFont(new Font("Monospaced", Font.PLAIN, 13));
         consolaArea.setBackground(new Color(20, 20, 20));
@@ -95,7 +95,7 @@ public class VentanaPrincipal extends JFrame {
         splitPane.setResizeWeight(0.7);
         splitPane.setDividerSize(5);
 
-        statusBar = new JLabel("  Listo  |  Línea: 1  Col: 1");
+        statusBar = new JLabel("  Listo  |  Linea: 1  Col: 1");
         statusBar.setFont(new Font("Monospaced", Font.PLAIN, 12));
         statusBar.setBorder(BorderFactory.createEmptyBorder(2, 5, 2, 5));
 
@@ -107,7 +107,7 @@ public class VentanaPrincipal extends JFrame {
     private void crearMenu() {
         JMenuBar menuBar = new JMenuBar();
 
-        // ── ARCHIVO ──
+        // ARCHIVO
         JMenu menuArchivo = new JMenu("Archivo");
 
         JMenuItem itemNuevo = new JMenuItem("Nuevo");
@@ -125,7 +125,7 @@ public class VentanaPrincipal extends JFrame {
         JMenuItem itemGuardarComo = new JMenuItem("Guardar como...");
         itemGuardarComo.addActionListener(e -> guardarComo());
 
-        JMenuItem itemCerrarTab = new JMenuItem("Cerrar pestaña");
+        JMenuItem itemCerrarTab = new JMenuItem("Cerrar pestania");
         itemCerrarTab.setAccelerator(KeyStroke.getKeyStroke("ctrl W"));
         itemCerrarTab.addActionListener(e -> cerrarTabActual());
 
@@ -137,7 +137,7 @@ public class VentanaPrincipal extends JFrame {
         menuArchivo.addSeparator();
         menuArchivo.add(itemCerrarTab);
 
-        // ── EJECUTAR ──
+        // EJECUTAR
         JMenu menuEjecutar = new JMenu("Ejecutar");
 
         JMenuItem itemEjecutar = new JMenuItem("Ejecutar");
@@ -150,7 +150,7 @@ public class VentanaPrincipal extends JFrame {
         menuEjecutar.add(itemEjecutar);
         menuEjecutar.add(itemLimpiar);
 
-        // ── REPORTES ──
+        // REPORTES
         JMenu menuReportes = new JMenu("Reportes");
 
         JMenuItem itemTokens = new JMenuItem("Tabla de Tokens");
@@ -168,7 +168,7 @@ public class VentanaPrincipal extends JFrame {
         setJMenuBar(menuBar);
     }
 
-    // ── GESTIÓN DE TABS ──
+    // GESTION DE TABS
 
     private void nuevaTab() {
         Tab tab = new Tab();
@@ -178,7 +178,7 @@ public class VentanaPrincipal extends JFrame {
     private void agregarTab(Tab tab) {
         JScrollPane scroll = tab.crearScroll();
 
-        // Actualizar números de línea y statusbar al escribir
+        // Actualizar nmeros de linea y statusbar al escribir
         tab.editorArea.addKeyListener(new KeyAdapter() {
             @Override
             public void keyReleased(KeyEvent e) {
@@ -188,7 +188,7 @@ public class VentanaPrincipal extends JFrame {
         });
 
         tabbedPane.addTab(tab.getNombre(), scroll);
-        // Guardar la tab en el componente para recuperarla después
+        // Guardar la tab en el componente para recuperarla despus
         scroll.putClientProperty("tab", tab);
         tabbedPane.setSelectedIndex(tabbedPane.getTabCount() - 1);
         setTitle("GoLite IDE - " + tab.getNombre());
@@ -205,7 +205,7 @@ public class VentanaPrincipal extends JFrame {
         int idx = tabbedPane.getSelectedIndex();
         if (idx == -1) return;
         if (tabbedPane.getTabCount() == 1) {
-            // Si es la última tab, limpiarla en lugar de cerrarla
+            // Si es la ultima tab, limpiarla en lugar de cerrarla
             Tab tab = getTabActual();
             if (tab != null) {
                 tab.editorArea.setText("");
@@ -219,7 +219,7 @@ public class VentanaPrincipal extends JFrame {
         setTitle("GoLite IDE - " + (getTabActual() != null ? getTabActual().getNombre() : ""));
     }
 
-    // ── ACCIONES ──
+    // ACCIONES
 
     private void nuevoArchivo() {
         nuevaTab();
@@ -280,11 +280,11 @@ public class VentanaPrincipal extends JFrame {
 
         String codigo = tab.editorArea.getText().trim();
         if (codigo.isEmpty()) {
-            consolaArea.append("\n⚠ No hay código para ejecutar.\n");
+            consolaArea.append("\nNo hay codigo para ejecutar.\n");
             return;
         }
 
-        consolaArea.append("\n▶ Ejecutando...\n");
+        consolaArea.append("\n ▶ Ejecutando...\n");
         Interprete.resetear();
 
         try {
@@ -296,28 +296,28 @@ public class VentanaPrincipal extends JFrame {
                 String resultado = Interprete.getInstancia().ejecutar(programa);
                 consolaArea.append(resultado);
                 if (Interprete.getInstancia().getErrores().isEmpty()) {
-                    consolaArea.append("\n✓ Ejecución completada.\n");
+                    consolaArea.append("\n Ejecución completada.\n");
                 } else {
-                    consolaArea.append("\n⚠ Ejecución con " + Interprete.getInstancia().getErrores().size() + " error(es).\n");
+                    consolaArea.append("\n Ejecución con " + Interprete.getInstancia().getErrores().size() + " error(es).\n");
                 }
             }
         } catch (RuntimeException ex) {
             String msg = ex.getMessage() != null ? ex.getMessage() : "Error desconocido";
-            consolaArea.append("✗ Error: " + msg + "\n");
+            consolaArea.append("Error: " + msg + "\n");
             Interprete.getInstancia().agregarError(msg, 0, 0, "semántico");
         } catch (Exception ex) {
             String msg = ex.getMessage() != null ? ex.getMessage() : "Error desconocido";
-            consolaArea.append("✗ Error: " + msg + "\n");
+            consolaArea.append("Error: " + msg + "\n");
             Interprete.getInstancia().agregarError(msg, 0, 0, "sintáctico");
         }
     }
 
-    // ── REPORTES ──
+    // REPORTES
 
     private void mostrarTokens() {
         StringBuilder sb = new StringBuilder();
         sb.append(String.format("%-5s| %-20s| %-16s| %-6s| %s%n",
-                "No.", "Lexema", "Tipo", "Línea", "Columna"));
+                "No.", "Lexema", "Tipo", "Linea", "Columna"));
         sb.append(String.format("%-5s|%-21s|%-17s|%-7s|%s%n",
                 "-----", "--------------------", "-----------------", "-------", "--------"));
         int i = 1;
@@ -331,12 +331,12 @@ public class VentanaPrincipal extends JFrame {
     private void mostrarErrores() {
         StringBuilder sb = new StringBuilder();
         sb.append(String.format("%-5s| %-35s| %-6s| %-5s| %s%n",
-                "No.", "Descripción", "Línea", "Col", "Tipo"));
+                "No.", "Descripcion", "Linea", "Col", "Tipo"));
         sb.append(String.format("%-5s|%-36s|%-7s|%-6s|%s%n",
                 "-----", "-----------------------------------", "-------", "------", "----------"));
 
         if (Interprete.getInstancia().getErrores().isEmpty()) {
-            sb.append("\n  ✓ No se encontraron errores.\n");
+            sb.append("\n   No se encontraron errores.\n");
         } else {
             int i = 1;
             for (var error : Interprete.getInstancia().getErrores()) {
@@ -377,7 +377,7 @@ public class VentanaPrincipal extends JFrame {
             int pos = tab.editorArea.getCaretPosition();
             int line = tab.editorArea.getLineOfOffset(pos) + 1;
             int col = pos - tab.editorArea.getLineStartOffset(line - 1) + 1;
-            statusBar.setText("  Listo  |  Línea: " + line + "  Col: " + col);
+            statusBar.setText("  Listo  |  Linea: " + line + "  Col: " + col);
         } catch (Exception ignored) {}
     }
 }

@@ -32,6 +32,6 @@ public class NodoSuma extends NodoAST {
         if (izq instanceof String && der instanceof String)
             return (String) izq + (String) der;
 
-        throw new RuntimeException("Operación invalida en suma, linea " + linea);
+        throw new RuntimeException("Operacion invalida en suma, linea " + linea);
     }
 }

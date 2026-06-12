@@ -23,7 +23,7 @@ public class NodoPrograma extends NodoAST {
                 boolean yaRegistrado = Interprete.getInstancia().getErrores().stream()
                         .anyMatch(err -> err.descripcion.equals(msg));
                 if (!yaRegistrado)
-                    Interprete.getInstancia().agregarError(msg, 0, 0, "semántico");
+                    Interprete.getInstancia().agregarError(msg, 0, 0, "semantico");
             }
         }
         return null;

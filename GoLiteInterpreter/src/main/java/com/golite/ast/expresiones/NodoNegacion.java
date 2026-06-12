@@ -17,6 +17,6 @@ public class NodoNegacion extends NodoAST {
         if (val instanceof Integer) return -(Integer) val;
         if (val instanceof Double)  return -(Double) val;
 
-        throw new RuntimeException("Negación invlida, linea " + linea);
+        throw new RuntimeException("Negacion invlida, linea " + linea);
     }
 }

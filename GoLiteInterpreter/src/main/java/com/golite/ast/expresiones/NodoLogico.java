@@ -19,14 +19,14 @@ public class NodoLogico extends NodoAST {
         if (operador.equals("!")) {
             Object val = izquierda.interpretar();
             if (val instanceof Boolean) return !(Boolean) val;
-            throw new RuntimeException("NOT requiere booleano, línea " + linea);
+            throw new RuntimeException("NOT requiere booleano, linea " + linea);
         }
 
         Object izq = izquierda.interpretar();
         Object der = derecha.interpretar();
 
         if (!(izq instanceof Boolean) || !(der instanceof Boolean))
-            throw new RuntimeException("Operación logica requiere booleanos, linea " + linea);
+            throw new RuntimeException("Operacin logica requiere booleanos, linea " + linea);
 
         if (operador.equals("&&")) return (Boolean) izq && (Boolean) der;
         if (operador.equals("||")) return (Boolean) izq || (Boolean) der;
