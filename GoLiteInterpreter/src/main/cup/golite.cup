@@ -164,6 +164,6 @@ expr ::= expr:a PLUS   expr:b  {: RESULT = new NodoSuma(a, b, aleft, aright); :}
          {: RESULT = new NodoAtoi(e, pleft, pright); :}
        | PARSEFLOAT:p LPAREN expr:e RPAREN
          {: RESULT = new NodoParseFloat(e, pleft, pright); :}
-       | TYPEOF:p LPAREN expr:e RPAREN DOT ID
+       | TYPEOF:p LPAREN expr:e RPAREN DOT ID LPAREN RPAREN
          {: RESULT = new NodoTypeOf(e, pleft, pright); :}
        ;

@@ -1,5 +1,6 @@
 package com.golite.ast.sentencias;
 
+import com.golite.interpreter.Entorno;
 import com.golite.ast.NodoAST;
 import java.util.List;
 
@@ -11,10 +12,10 @@ public class NodoFor extends NodoAST {
 
     public NodoFor(NodoAST condicion, NodoAST inicializacion, NodoAST actualizacion, List<NodoAST> cuerpo, int linea, int columna) {
         super(linea, columna);
-        this.condicion     = condicion;
+        this.condicion = condicion;
         this.inicializacion = inicializacion;
         this.actualizacion = actualizacion;
-        this.cuerpo        = cuerpo;
+        this.cuerpo = cuerpo;
     }
 
     @Override
@@ -30,13 +31,18 @@ public class NodoFor extends NodoAST {
 
             if (!(Boolean) cond) break;
 
+            // ── push scope para el cuerpo de cada iteración ──
+            Entorno.pushBloque();
             try {
                 for (NodoAST s : cuerpo)
                     s.interpretar();
             } catch (BreakException e) {
+                Entorno.popBloque();
                 break;
             } catch (ContinueException e) {
-                // continua al siguiente ciclo
+                // continua, pero igual hay que limpiar el scope
+            } finally {
+                Entorno.popBloque();
             }
 
             if (actualizacion != null)

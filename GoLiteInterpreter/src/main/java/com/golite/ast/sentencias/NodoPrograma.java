@@ -1,6 +1,7 @@
 package com.golite.ast.sentencias;
 
 import com.golite.ast.NodoAST;
+import com.golite.interpreter.Interprete;
 import java.util.List;
 
 public class NodoPrograma extends NodoAST {
@@ -14,7 +15,16 @@ public class NodoPrograma extends NodoAST {
     @Override
     public Object interpretar() {
         for (NodoAST s : sentencias) {
-            s.interpretar();
+            if (s == null) continue;
+            try {
+                s.interpretar();
+            } catch (RuntimeException e) {
+                String msg = e.getMessage() != null ? e.getMessage() : "Error desconocido";
+                boolean yaRegistrado = Interprete.getInstancia().getErrores().stream()
+                        .anyMatch(err -> err.descripcion.equals(msg));
+                if (!yaRegistrado)
+                    Interprete.getInstancia().agregarError(msg, 0, 0, "semántico");
+            }
         }
         return null;
     }

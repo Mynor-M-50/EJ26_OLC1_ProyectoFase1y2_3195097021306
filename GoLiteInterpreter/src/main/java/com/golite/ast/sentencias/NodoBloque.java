@@ -14,8 +14,13 @@ public class NodoBloque extends NodoAST {
 
     @Override
     public Object interpretar() {
-        for (NodoAST s : sentencias)
-            s.interpretar();
+        Entorno.pushBloque();
+        try {
+            for (NodoAST s : sentencias)
+                s.interpretar();
+        } finally {
+            Entorno.popBloque();
+        }
         return null;
     }
 }

@@ -131,4 +131,13 @@ public class Entorno {
             resultado.putAll(padre.obtenerTabla());
         return resultado;
     }
+
+    public static void pushBloque() {
+        instancia = new Entorno(instancia);
+    }
+
+    public static void popBloque() {
+        if (instancia.padre != null)
+            instancia = instancia.padre;
+    }
 }
