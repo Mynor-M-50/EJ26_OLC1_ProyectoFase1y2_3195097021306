@@ -14,15 +14,51 @@ import java.nio.file.*;
 
 public class VentanaPrincipal extends JFrame {
 
-    private JTextArea editorArea;
+    // Cada tab tiene su propio editor y archivo
+    private static class Tab {
+        JTextArea editorArea;
+        JTextArea lineNumbers;
+        File archivo;
+
+        Tab() {
+            editorArea = new JTextArea();
+            editorArea.setFont(new Font("Monospaced", Font.PLAIN, 14));
+            editorArea.setBackground(new Color(30, 30, 30));
+            editorArea.setForeground(Color.WHITE);
+            editorArea.setCaretColor(Color.WHITE);
+            editorArea.setTabSize(4);
+
+            lineNumbers = new JTextArea("1");
+            lineNumbers.setBackground(new Color(45, 45, 45));
+            lineNumbers.setForeground(new Color(150, 150, 150));
+            lineNumbers.setFont(new Font("Monospaced", Font.PLAIN, 14));
+            lineNumbers.setEditable(false);
+            lineNumbers.setMargin(new Insets(0, 5, 0, 5));
+
+            archivo = null;
+        }
+
+        String getNombre() {
+            return archivo != null ? archivo.getName() : "Nuevo archivo";
+        }
+
+        JScrollPane crearScroll() {
+            JScrollPane scroll = new JScrollPane(editorArea);
+            scroll.setRowHeaderView(lineNumbers);
+            return scroll;
+        }
+    }
+
+    private JTabbedPane tabbedPane;
     private JTextArea consolaArea;
     private JLabel statusBar;
-    private File archivoActual;
 
     public VentanaPrincipal() {
         inicializarVentana();
         crearComponentes();
         crearMenu();
+        // Abrir con una tab vacía por defecto
+        nuevaTab();
     }
 
     private void inicializarVentana() {
@@ -35,34 +71,11 @@ public class VentanaPrincipal extends JFrame {
     private void crearComponentes() {
         JPanel panelPrincipal = new JPanel(new BorderLayout());
 
-        // ── EDITOR ──
-        editorArea = new JTextArea();
-        editorArea.setFont(new Font("Monospaced", Font.PLAIN, 14));
-        editorArea.setBackground(new Color(30, 30, 30));
-        editorArea.setForeground(Color.WHITE);
-        editorArea.setCaretColor(Color.WHITE);
-        editorArea.setTabSize(4);
-
-        JTextArea lineNumbers = new JTextArea("1");
-        lineNumbers.setBackground(new Color(45, 45, 45));
-        lineNumbers.setForeground(new Color(150, 150, 150));
-        lineNumbers.setFont(new Font("Monospaced", Font.PLAIN, 14));
-        lineNumbers.setEditable(false);
-        lineNumbers.setMargin(new Insets(0, 5, 0, 5));
-
-        editorArea.addKeyListener(new KeyAdapter() {
-            @Override
-            public void keyReleased(KeyEvent e) {
-                actualizarNumeroLineas(lineNumbers);
-                actualizarStatusBar();
-            }
-        });
-
-        JScrollPane editorScroll = new JScrollPane(editorArea);
-        editorScroll.setRowHeaderView(lineNumbers);
-        editorScroll.setBorder(BorderFactory.createTitledBorder(
-                BorderFactory.createLineBorder(new Color(70, 70, 70)),
-                "Editor", 0, 0, null, Color.GRAY));
+        // ── TABS ──
+        tabbedPane = new JTabbedPane();
+        tabbedPane.setBackground(new Color(45, 45, 45));
+        tabbedPane.setForeground(Color.WHITE);
+        tabbedPane.addChangeListener(e -> actualizarStatusBar());
 
         // ── CONSOLA ──
         consolaArea = new JTextArea();
@@ -78,7 +91,7 @@ public class VentanaPrincipal extends JFrame {
                 "Consola", 0, 0, null, Color.GRAY));
         consolaScroll.setPreferredSize(new Dimension(0, 200));
 
-        JSplitPane splitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT, editorScroll, consolaScroll);
+        JSplitPane splitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT, tabbedPane, consolaScroll);
         splitPane.setResizeWeight(0.7);
         splitPane.setDividerSize(5);
 
@@ -96,9 +109,10 @@ public class VentanaPrincipal extends JFrame {
 
         // ── ARCHIVO ──
         JMenu menuArchivo = new JMenu("Archivo");
+
         JMenuItem itemNuevo = new JMenuItem("Nuevo");
         itemNuevo.setAccelerator(KeyStroke.getKeyStroke("ctrl N"));
-        itemNuevo.addActionListener(e -> nuevoArchivo());
+        itemNuevo.addActionListener(e -> nuevaTab());
 
         JMenuItem itemAbrir = new JMenuItem("Abrir");
         itemAbrir.setAccelerator(KeyStroke.getKeyStroke("ctrl O"));
@@ -111,14 +125,21 @@ public class VentanaPrincipal extends JFrame {
         JMenuItem itemGuardarComo = new JMenuItem("Guardar como...");
         itemGuardarComo.addActionListener(e -> guardarComo());
 
+        JMenuItem itemCerrarTab = new JMenuItem("Cerrar pestaña");
+        itemCerrarTab.setAccelerator(KeyStroke.getKeyStroke("ctrl W"));
+        itemCerrarTab.addActionListener(e -> cerrarTabActual());
+
         menuArchivo.add(itemNuevo);
         menuArchivo.add(itemAbrir);
         menuArchivo.addSeparator();
         menuArchivo.add(itemGuardar);
         menuArchivo.add(itemGuardarComo);
+        menuArchivo.addSeparator();
+        menuArchivo.add(itemCerrarTab);
 
         // ── EJECUTAR ──
         JMenu menuEjecutar = new JMenu("Ejecutar");
+
         JMenuItem itemEjecutar = new JMenuItem("Ejecutar");
         itemEjecutar.setAccelerator(KeyStroke.getKeyStroke("F5"));
         itemEjecutar.addActionListener(e -> ejecutarCodigo());
@@ -131,6 +152,7 @@ public class VentanaPrincipal extends JFrame {
 
         // ── REPORTES ──
         JMenu menuReportes = new JMenu("Reportes");
+
         JMenuItem itemTokens = new JMenuItem("Tabla de Tokens");
         itemTokens.addActionListener(e -> mostrarTokens());
 
@@ -146,23 +168,76 @@ public class VentanaPrincipal extends JFrame {
         setJMenuBar(menuBar);
     }
 
+    // ── GESTIÓN DE TABS ──
+
+    private void nuevaTab() {
+        Tab tab = new Tab();
+        agregarTab(tab);
+    }
+
+    private void agregarTab(Tab tab) {
+        JScrollPane scroll = tab.crearScroll();
+
+        // Actualizar números de línea y statusbar al escribir
+        tab.editorArea.addKeyListener(new KeyAdapter() {
+            @Override
+            public void keyReleased(KeyEvent e) {
+                actualizarNumeroLineas(tab);
+                actualizarStatusBar();
+            }
+        });
+
+        tabbedPane.addTab(tab.getNombre(), scroll);
+        // Guardar la tab en el componente para recuperarla después
+        scroll.putClientProperty("tab", tab);
+        tabbedPane.setSelectedIndex(tabbedPane.getTabCount() - 1);
+        setTitle("GoLite IDE - " + tab.getNombre());
+    }
+
+    private Tab getTabActual() {
+        int idx = tabbedPane.getSelectedIndex();
+        if (idx == -1) return null;
+        JScrollPane scroll = (JScrollPane) tabbedPane.getComponentAt(idx);
+        return (Tab) scroll.getClientProperty("tab");
+    }
+
+    private void cerrarTabActual() {
+        int idx = tabbedPane.getSelectedIndex();
+        if (idx == -1) return;
+        if (tabbedPane.getTabCount() == 1) {
+            // Si es la última tab, limpiarla en lugar de cerrarla
+            Tab tab = getTabActual();
+            if (tab != null) {
+                tab.editorArea.setText("");
+                tab.archivo = null;
+                tabbedPane.setTitleAt(0, "Nuevo archivo");
+                setTitle("GoLite IDE - Nuevo archivo");
+            }
+            return;
+        }
+        tabbedPane.removeTabAt(idx);
+        setTitle("GoLite IDE - " + (getTabActual() != null ? getTabActual().getNombre() : ""));
+    }
+
     // ── ACCIONES ──
 
     private void nuevoArchivo() {
-        editorArea.setText("");
-        archivoActual = null;
-        setTitle("GoLite IDE - Nuevo archivo");
+        nuevaTab();
     }
 
     private void abrirArchivo() {
         JFileChooser fc = new JFileChooser();
         fc.setFileFilter(new FileNameExtensionFilter("GoLite (*.glt)", "glt"));
         if (fc.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
-            archivoActual = fc.getSelectedFile();
+            File archivo = fc.getSelectedFile();
             try {
-                String contenido = new String(Files.readAllBytes(archivoActual.toPath()));
-                editorArea.setText(contenido);
-                setTitle("GoLite IDE - " + archivoActual.getName());
+                String contenido = new String(Files.readAllBytes(archivo.toPath()));
+                Tab tab = new Tab();
+                tab.archivo = archivo;
+                tab.editorArea.setText(contenido);
+                agregarTab(tab);
+                tabbedPane.setTitleAt(tabbedPane.getSelectedIndex(), tab.getNombre());
+                setTitle("GoLite IDE - " + tab.getNombre());
             } catch (IOException ex) {
                 mostrarError("Error al abrir: " + ex.getMessage());
             }
@@ -170,11 +245,13 @@ public class VentanaPrincipal extends JFrame {
     }
 
     private void guardarArchivo() {
-        if (archivoActual == null) {
+        Tab tab = getTabActual();
+        if (tab == null) return;
+        if (tab.archivo == null) {
             guardarComo();
         } else {
             try {
-                Files.write(archivoActual.toPath(), editorArea.getText().getBytes());
+                Files.write(tab.archivo.toPath(), tab.editorArea.getText().getBytes());
             } catch (IOException ex) {
                 mostrarError("Error al guardar: " + ex.getMessage());
             }
@@ -182,27 +259,33 @@ public class VentanaPrincipal extends JFrame {
     }
 
     private void guardarComo() {
+        Tab tab = getTabActual();
+        if (tab == null) return;
         JFileChooser fc = new JFileChooser();
         fc.setFileFilter(new FileNameExtensionFilter("GoLite (*.glt)", "glt"));
         if (fc.showSaveDialog(this) == JFileChooser.APPROVE_OPTION) {
-            archivoActual = fc.getSelectedFile();
-            if (!archivoActual.getName().endsWith(".glt"))
-                archivoActual = new File(archivoActual.getAbsolutePath() + ".glt");
+            tab.archivo = fc.getSelectedFile();
+            if (!tab.archivo.getName().endsWith(".glt"))
+                tab.archivo = new File(tab.archivo.getAbsolutePath() + ".glt");
             guardarArchivo();
-            setTitle("GoLite IDE - " + archivoActual.getName());
+            int idx = tabbedPane.getSelectedIndex();
+            tabbedPane.setTitleAt(idx, tab.getNombre());
+            setTitle("GoLite IDE - " + tab.getNombre());
         }
     }
 
     private void ejecutarCodigo() {
-        String codigo = editorArea.getText().trim();
+        Tab tab = getTabActual();
+        if (tab == null) return;
+
+        String codigo = tab.editorArea.getText().trim();
         if (codigo.isEmpty()) {
             consolaArea.append("\n⚠ No hay código para ejecutar.\n");
             return;
         }
 
         consolaArea.append("\n▶ Ejecutando...\n");
-        Interprete.getInstancia().limpiarErrores();
-        Interprete.getInstancia().limpiarTokens();
+        Interprete.resetear();
 
         try {
             Lexer lexer = new Lexer(new java.io.StringReader(codigo));
@@ -228,6 +311,8 @@ public class VentanaPrincipal extends JFrame {
             Interprete.getInstancia().agregarError(msg, 0, 0, "sintáctico");
         }
     }
+
+    // ── REPORTES ──
 
     private void mostrarTokens() {
         StringBuilder sb = new StringBuilder();
@@ -277,21 +362,22 @@ public class VentanaPrincipal extends JFrame {
         JOptionPane.showMessageDialog(this, msg, "Error", JOptionPane.ERROR_MESSAGE);
     }
 
-    private void actualizarNumeroLineas(JTextArea lineNumbers) {
-        int lines = editorArea.getLineCount();
+    private void actualizarNumeroLineas(Tab tab) {
+        int lines = tab.editorArea.getLineCount();
         StringBuilder sb = new StringBuilder();
         for (int i = 1; i <= lines; i++)
             sb.append(i).append("\n");
-        lineNumbers.setText(sb.toString());
+        tab.lineNumbers.setText(sb.toString());
     }
 
     private void actualizarStatusBar() {
+        Tab tab = getTabActual();
+        if (tab == null) return;
         try {
-            int pos = editorArea.getCaretPosition();
-            int line = editorArea.getLineOfOffset(pos) + 1;
-            int col = pos - editorArea.getLineStartOffset(line - 1) + 1;
+            int pos = tab.editorArea.getCaretPosition();
+            int line = tab.editorArea.getLineOfOffset(pos) + 1;
+            int col = pos - tab.editorArea.getLineStartOffset(line - 1) + 1;
             statusBar.setText("  Listo  |  Línea: " + line + "  Col: " + col);
         } catch (Exception ignored) {}
     }
 }
-
