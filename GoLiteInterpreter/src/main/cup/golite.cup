@@ -66,8 +66,6 @@ start with program;
 
 program ::= FUNC MAIN LPAREN RPAREN LBRACE stmt_list:s RBRACE
             {: RESULT = new NodoPrograma(s); :}
-          | stmt_list:s
-            {: RESULT = new NodoPrograma(s); :}
           ;
 
 stmt_list ::= stmt_list:sl stmt:s
