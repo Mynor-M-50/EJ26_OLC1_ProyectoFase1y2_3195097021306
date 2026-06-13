@@ -26,7 +26,7 @@ El interprete esta construido en tres fases:
 
 ## Documentacion
 
-- [Manual de Usuario](ManualTecnico_GoLite_Fase1.pdf)
+- [Manual de Usuario](ManualUsuario_GoLite_Fase1.pdf)
 - [Manual Tecnico](ManualTecnico_GoLite_Fase1.pdf)
 
 ## Requisitos Previos
