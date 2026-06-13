@@ -495,6 +495,7 @@ public class Parser extends java_cup.runtime.lr_parser {
     }
     public void report_fatal_error(String message, Object info) {
         report_error(message, info);
+        throw new RuntimeException("Error sintactico: " + message);
     }
 
 
