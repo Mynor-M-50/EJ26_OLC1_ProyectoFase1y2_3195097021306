@@ -4,6 +4,9 @@ import com.golite.interpreter.Interprete;
 import com.golite.lexer.Lexer;
 import com.golite.parser.Parser;
 import com.golite.ast.sentencias.NodoPrograma;
+import com.golite.errors.ErrorSemantic;
+import java.util.List;
+import java.util.Set;
 
 import javax.swing.*;
 import javax.swing.filechooser.FileNameExtensionFilter;
@@ -295,20 +298,30 @@ public class VentanaPrincipal extends JFrame {
             if (programa != null) {
                 String resultado = Interprete.getInstancia().ejecutar(programa);
                 consolaArea.append(resultado);
-                if (Interprete.getInstancia().getErrores().isEmpty()) {
-                    consolaArea.append("\n Ejecución completada.\n");
+
+                // Filtrar errores sintacticos falsos en lineas con error lexico
+                List<ErrorSemantic> errores = Interprete.getInstancia().getErrores();
+                Set<Integer> lineasLexicas = errores.stream()
+                        .filter(e -> e.tipo.toLowerCase().contains("lex"))
+                        .map(e -> e.linea)
+                        .collect(java.util.stream.Collectors.toSet());
+                errores.removeIf(e -> e.tipo.toLowerCase().contains("sint")
+                        && lineasLexicas.contains(e.linea));
+
+                if (errores.isEmpty()) {
+                    consolaArea.append("\n Ejecucion completada.\n");
                 } else {
-                    consolaArea.append("\n Ejecución con " + Interprete.getInstancia().getErrores().size() + " error(es).\n");
+                    consolaArea.append("\n Ejecucion con " + errores.size() + " error(es).\n");
                 }
             }
         } catch (RuntimeException ex) {
             String msg = ex.getMessage() != null ? ex.getMessage() : "Error desconocido";
             consolaArea.append("Error: " + msg + "\n");
-            Interprete.getInstancia().agregarError(msg, 0, 0, "semántico");
+            Interprete.getInstancia().agregarError(msg, 0, 0, "semantico");
         } catch (Exception ex) {
             String msg = ex.getMessage() != null ? ex.getMessage() : "Error desconocido";
             consolaArea.append("Error: " + msg + "\n");
-            Interprete.getInstancia().agregarError(msg, 0, 0, "sintáctico");
+            Interprete.getInstancia().agregarError(msg, 0, 0, "sintactico");
         }
     }
 

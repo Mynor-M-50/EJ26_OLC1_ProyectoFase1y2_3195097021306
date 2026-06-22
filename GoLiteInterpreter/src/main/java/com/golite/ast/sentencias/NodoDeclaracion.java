@@ -18,11 +18,36 @@ public class NodoDeclaracion extends NodoAST {
     @Override
     public Object interpretar() {
         Object val = null;
+        boolean errorEnValor = false;
 
         if (valor != null) {
-            val = valor.interpretar();
-        } else {
-            switch (tipo) {
+            try {
+                val = valor.interpretar();
+            } catch (RuntimeException e) {
+                errorEnValor = true;
+                String msg = e.getMessage() != null ? e.getMessage() : "Error desconocido";
+                boolean yaRegistrado = com.golite.interpreter.Interprete.getInstancia()
+                        .getErrores().stream().anyMatch(err -> err.descripcion.equals(msg));
+                if (!yaRegistrado)
+                    com.golite.interpreter.Interprete.getInstancia()
+                            .agregarError(msg, linea, columna, "semantico");
+            }
+        }
+
+        // Inferir tipo si viene de :=
+        String tipoFinal = tipo;
+        if (tipoFinal == null && val != null) {
+            if (val instanceof Integer) tipoFinal = "int";
+            else if (val instanceof Double) tipoFinal = "float64";
+            else if (val instanceof String) tipoFinal = "string";
+            else if (val instanceof Boolean) tipoFinal = "bool";
+            else if (val instanceof Character) tipoFinal = "rune";
+        }
+
+        // Si hubo error en el valor, usar el valor por defecto del tipo
+        if (errorEnValor || val == null) {
+            if (tipoFinal == null) tipoFinal = "int";
+            switch (tipoFinal) {
                 case "int":
                     val = 0;
                     break;
@@ -44,17 +69,12 @@ public class NodoDeclaracion extends NodoAST {
             }
         }
 
-        // Inferir tipo si viene de :=
-        String tipoFinal = tipo;
-        if (tipoFinal == null && val != null) {
-            if (val instanceof Integer) tipoFinal = "int";
-            else if (val instanceof Double) tipoFinal = "float64";
-            else if (val instanceof String) tipoFinal = "string";
-            else if (val instanceof Boolean) tipoFinal = "bool";
-            else if (val instanceof Character) tipoFinal = "rune";
+        // Siempre declarar la variable para evitar errores en cascada
+        try {
+            Entorno.getInstancia().declarar(nombre, tipoFinal, val, linea, columna);
+        } catch (RuntimeException e) {
+            // Ya fue reportado por Entorno.declarar (variable duplicada)
         }
-
-        Entorno.getInstancia().declarar(nombre, tipoFinal, val, linea, columna);
         return null;
     }
 }

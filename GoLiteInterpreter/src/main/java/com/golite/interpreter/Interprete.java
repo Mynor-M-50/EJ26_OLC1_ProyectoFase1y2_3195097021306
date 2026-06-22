@@ -14,6 +14,12 @@ public class Interprete {
     private List<String[]> tablaTokens;
     private StringBuilder consola;
 
+    private int nivelCiclo = 0;
+
+    public void entrarCiclo()  { nivelCiclo++; }
+    public void salirCiclo()   { nivelCiclo--; }
+    public boolean enCiclo()   { return nivelCiclo > 0; }
+
     public static Interprete getInstancia() {
         if (instancia == null)
             instancia = new Interprete();

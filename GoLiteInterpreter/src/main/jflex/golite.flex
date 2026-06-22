@@ -126,6 +126,7 @@ RuneLiteral     = \'([^\'\\\n]|\\.)\'
 /* ── Error lexico ── */
 [^] {
     com.golite.interpreter.Interprete.getInstancia()
-        .agregarError("Carácter no reconocido: '" + yytext() + "'", yyline+1, yycolumn+1, "léxico");
-    System.err.println("Error léxico: '" + yytext() + "' línea " + (yyline+1));
+        .agregarError("Caracter no reconocido: '" + yytext() + "'", yyline+1, yycolumn+1, "lexico");
+    System.err.println("Error lexico: '" + yytext() + "' linea " + (yyline+1));
+    return new Symbol(Sym.error, yyline+1, yycolumn+1);
 }

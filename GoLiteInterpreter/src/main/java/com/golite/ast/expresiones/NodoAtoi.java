@@ -19,7 +19,7 @@ public class NodoAtoi extends NodoAST {
             return Integer.parseInt((String) val);
         } catch (NumberFormatException e) {
             String msg = "strconv.Atoi: no se puede convertir '" + val + "' a int, línea " + linea;
-            com.golite.interpreter.Interprete.getInstancia().agregarError(msg, linea, columna, "semántico");
+            com.golite.interpreter.Interprete.getInstancia().agregarError(msg, linea, columna, "semntico");
             throw new RuntimeException(msg);
         }
     }

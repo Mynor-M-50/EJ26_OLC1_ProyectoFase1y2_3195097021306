@@ -9,6 +9,11 @@ public class NodoBreak extends NodoAST {
 
     @Override
     public Object interpretar() {
+        if (!com.golite.interpreter.Interprete.getInstancia().enCiclo()) {
+            String msg = "Sentencia break fuera de un ciclo, linea " + linea;
+            com.golite.interpreter.Interprete.getInstancia().agregarError(msg, linea, columna, "semantico");
+            throw new RuntimeException(msg);
+        }
         throw new BreakException();
     }
 }

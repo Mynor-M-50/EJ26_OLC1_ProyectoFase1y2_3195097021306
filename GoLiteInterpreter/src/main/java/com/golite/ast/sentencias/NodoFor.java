@@ -1,12 +1,13 @@
 package com.golite.ast.sentencias;
 
 import com.golite.interpreter.Entorno;
+import com.golite.interpreter.Interprete;
 import com.golite.ast.NodoAST;
 import java.util.List;
 
 public class NodoFor extends NodoAST {
-    public NodoAST condicion;        // for condicion { }
-    public NodoAST inicializacion;   // for init; cond; update { }
+    public NodoAST condicion;
+    public NodoAST inicializacion;
     public NodoAST actualizacion;
     public List<NodoAST> cuerpo;
 
@@ -20,20 +21,18 @@ public class NodoFor extends NodoAST {
 
     @Override
     public Object interpretar() {
-        // El for clasico necesita su propio scope para la variable de init
         boolean tieneInit = (inicializacion != null);
         if (tieneInit) Entorno.pushBloque();
 
+        Interprete.getInstancia().entrarCiclo();
         try {
             if (inicializacion != null)
                 inicializacion.interpretar();
 
             while (true) {
                 Object cond = condicion.interpretar();
-
                 if (!(cond instanceof Boolean))
                     throw new RuntimeException("Condicion del for debe ser booleana, linea " + linea);
-
                 if (!(Boolean) cond) break;
 
                 Entorno.pushBloque();
@@ -43,7 +42,7 @@ public class NodoFor extends NodoAST {
                 } catch (BreakException e) {
                     break;
                 } catch (ContinueException e) {
-                    // continua pero limpia el scope del cuerpo
+                    // continua
                 } finally {
                     Entorno.popBloque();
                 }
@@ -52,6 +51,7 @@ public class NodoFor extends NodoAST {
                     actualizacion.interpretar();
             }
         } finally {
+            Interprete.getInstancia().salirCiclo();
             if (tieneInit) Entorno.popBloque();
         }
 

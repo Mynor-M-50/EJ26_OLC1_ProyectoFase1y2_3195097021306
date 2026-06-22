@@ -71,6 +71,8 @@ program ::= FUNC MAIN LPAREN RPAREN LBRACE stmt_list:s RBRACE
 
 stmt_list ::= stmt_list:sl stmt:s
               {: sl.add(s); RESULT = sl; :}
+            | stmt_list:sl error opt_semi
+              {: RESULT = sl; :}
             |
               {: RESULT = new ArrayList<>(); :}
             ;
@@ -170,5 +172,7 @@ expr ::= expr:a PLUS   expr:b  {: RESULT = new NodoSuma(a, b, aleft, aright); :}
        | PARSEFLOAT:p LPAREN expr:e RPAREN
          {: RESULT = new NodoParseFloat(e, pleft, pright); :}
        | TYPEOF:p LPAREN expr:e RPAREN DOT ID LPAREN RPAREN
+         {: RESULT = new NodoTypeOf(e, pleft, pright); :}
+       | TYPEOF:p LPAREN expr:e RPAREN
          {: RESULT = new NodoTypeOf(e, pleft, pright); :}
        ;
