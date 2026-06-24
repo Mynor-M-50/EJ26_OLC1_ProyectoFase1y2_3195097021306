@@ -44,10 +44,15 @@ terminal Boolean     TRUE, FALSE;
 terminal Character   RUNE_LIT;
 
 non terminal NodoPrograma        program;
-non terminal List<NodoAST>       stmt_list;
+non terminal List                func_list;
+non terminal NodoAST             func_decl;
+non terminal List                param_list;
+non terminal List                params;
+non terminal Object[]            param;
+non terminal List                stmt_list;
 non terminal NodoAST             stmt;
 non terminal NodoAST             expr;
-non terminal List<NodoAST>       expr_list;
+non terminal List                expr_list;
 non terminal String              tipo;
 non terminal NodoAST             decl_stmt;
 non terminal NodoAsignacion      assign_stmt;
@@ -56,7 +61,7 @@ non terminal NodoAST             for_stmt;
 non terminal NodoAST             print_stmt;
 non terminal String              opt_semi;
 non terminal NodoAST             switch_stmt;
-non terminal List<NodoAST>       case_list;
+non terminal List                case_list;
 non terminal NodoAST             case_clause;
 
 precedence left OR;
@@ -69,18 +74,46 @@ precedence right NOT, UMINUS;
 
 start with program;
 
-program ::= FUNC MAIN LPAREN RPAREN LBRACE stmt_list:s RBRACE
-            {: RESULT = new NodoPrograma(s); :}
+program ::= func_list:fl FUNC MAIN LPAREN RPAREN LBRACE stmt_list:s RBRACE
+            {: RESULT = new NodoPrograma((List)fl, (List)s); :}
+          | FUNC MAIN LPAREN RPAREN LBRACE stmt_list:s RBRACE
+            {: RESULT = new NodoPrograma(new ArrayList(), (List)s); :}
           ;
 
+func_list ::= func_list:fl func_decl:f
+              {: ((List)fl).add(f); RESULT = fl; :}
+            | func_decl:f
+              {: List l = new ArrayList(); l.add(f); RESULT = l; :}
+            ;
+
+func_decl ::= FUNC ID:n LPAREN param_list:p RPAREN tipo:t LBRACE stmt_list:s RBRACE
+              {: RESULT = new NodoFuncion(n, (List)p, t, (List)s, nleft, nright); :}
+            | FUNC ID:n LPAREN param_list:p RPAREN LBRACE stmt_list:s RBRACE
+              {: RESULT = new NodoFuncion(n, (List)p, null, (List)s, nleft, nright); :}
+            ;
+
+param_list ::= params:p  {: RESULT = p; :}
+             |            {: RESULT = new ArrayList(); :}
+             ;
+
+params ::= params:ps COMMA param:p
+           {: ((List)ps).add(p); RESULT = ps; :}
+         | param:p
+           {: List l = new ArrayList(); l.add(p); RESULT = l; :}
+         ;
+
+param ::= ID:n tipo:t
+          {: RESULT = new Object[]{n, t}; :}
+        ;
+
 stmt_list ::= stmt_list:sl stmt:s
-              {: if (s != null) { sl.add(s); } RESULT = sl; :}
+              {: if (s != null) { ((List)sl).add(s); } RESULT = sl; :}
             | stmt_list:sl error SEMICOLON
               {: RESULT = sl; :}
             | stmt_list:sl error RBRACE
               {: RESULT = sl; :}
             |
-              {: RESULT = new ArrayList<>(); :}
+              {: RESULT = new ArrayList(); :}
             ;
 
 opt_semi ::= SEMICOLON | ;
@@ -93,8 +126,19 @@ stmt ::= decl_stmt:d   opt_semi  {: RESULT = d; :}
        | switch_stmt:s           {: RESULT = s; :}
        | BREAK:b        opt_semi {: RESULT = new NodoBreak(bleft, bright); :}
        | CONTINUE:c     opt_semi {: RESULT = new NodoContinue(cleft, cright); :}
+       | RETURN:r expr:e SEMICOLON {: RESULT = new NodoReturn(e, rleft, rright); :}
+       | RETURN:r expr:e           {: RESULT = new NodoReturn(e, rleft, rright); :}
+       | RETURN:r SEMICOLON        {: RESULT = new NodoReturn(null, rleft, rright); :}
+       | ID:n LPAREN expr_list:a RPAREN SEMICOLON
+         {: RESULT = new NodoLlamada(n, (List)a, nleft, nright); :}
+       | ID:n LPAREN expr_list:a RPAREN
+         {: RESULT = new NodoLlamada(n, (List)a, nleft, nright); :}
+       | ID:n LPAREN RPAREN SEMICOLON
+         {: RESULT = new NodoLlamada(n, new ArrayList(), nleft, nright); :}
+       | ID:n LPAREN RPAREN
+         {: RESULT = new NodoLlamada(n, new ArrayList(), nleft, nright); :}
        | LBRACE stmt_list:sl RBRACE
-         {: RESULT = new NodoBloque(sl, 0, 0); :}
+         {: RESULT = new NodoBloque((List)sl, 0, 0); :}
        ;
 
 decl_stmt ::= VAR ID:n tipo:t ASSIGN expr:e
@@ -125,45 +169,45 @@ assign_stmt ::= ID:n ASSIGN expr:e
               ;
 
 if_stmt ::= IF expr:c LBRACE stmt_list:t RBRACE
-            {: RESULT = new NodoIf(c, t, null, null, cleft, cright); :}
+            {: RESULT = new NodoIf(c, (List)t, null, null, cleft, cright); :}
           | IF expr:c LBRACE stmt_list:t RBRACE ELSE LBRACE stmt_list:e RBRACE
-            {: RESULT = new NodoIf(c, t, e, null, cleft, cright); :}
+            {: RESULT = new NodoIf(c, (List)t, (List)e, null, cleft, cright); :}
           | IF expr:c LBRACE stmt_list:t RBRACE ELSE if_stmt:ei
-            {: RESULT = new NodoIf(c, t, null, ei, cleft, cright); :}
+            {: RESULT = new NodoIf(c, (List)t, null, ei, cleft, cright); :}
           ;
 
 for_stmt ::= FOR expr:c LBRACE stmt_list:b RBRACE
-             {: RESULT = new NodoFor(c, null, null, b, cleft, cright); :}
+             {: RESULT = new NodoFor(c, null, null, (List)b, cleft, cright); :}
            | FOR decl_stmt:i SEMICOLON expr:c SEMICOLON assign_stmt:u LBRACE stmt_list:b RBRACE
-             {: RESULT = new NodoFor(c, i, u, b, cleft, cright); :}
+             {: RESULT = new NodoFor(c, i, u, (List)b, cleft, cright); :}
            ;
 
 print_stmt ::= PRINTLN:p LPAREN expr_list:args RPAREN
-               {: RESULT = new NodoPrintln(args, pleft, pright); :}
+               {: RESULT = new NodoPrintln((List)args, pleft, pright); :}
              | PRINTLN:p LPAREN RPAREN
-               {: RESULT = new NodoPrintln(new ArrayList<>(), pleft, pright); :}
+               {: RESULT = new NodoPrintln(new ArrayList(), pleft, pright); :}
              ;
 
 switch_stmt ::= SWITCH:s expr:e LBRACE case_list:cl RBRACE
-                {: RESULT = new NodoSwitch(e, cl, null, sleft, sright); :}
+                {: RESULT = new NodoSwitch(e, (List)cl, null, sleft, sright); :}
               | SWITCH:s expr:e LBRACE case_list:cl DEFAULT COLON stmt_list:dl RBRACE
-                {: RESULT = new NodoSwitch(e, cl, dl, sleft, sright); :}
+                {: RESULT = new NodoSwitch(e, (List)cl, (List)dl, sleft, sright); :}
               ;
 
 case_list ::= case_list:cl case_clause:c
-              {: cl.add(c); RESULT = cl; :}
+              {: ((List)cl).add(c); RESULT = cl; :}
             |
-              {: RESULT = new ArrayList<>(); :}
+              {: RESULT = new ArrayList(); :}
             ;
 
 case_clause ::= CASE:c expr:e COLON stmt_list:sl
-                {: RESULT = new NodoCaso(e, sl, cleft, cright); :}
+                {: RESULT = new NodoCaso(e, (List)sl, cleft, cright); :}
               ;
 
 expr_list ::= expr_list:el COMMA expr:e
-              {: el.add(e); RESULT = el; :}
+              {: ((List)el).add(e); RESULT = el; :}
             | expr:e
-              {: List<NodoAST> l = new ArrayList<>(); l.add(e); RESULT = l; :}
+              {: List l = new ArrayList(); l.add(e); RESULT = l; :}
             ;
 
 expr ::= expr:a PLUS   expr:b  {: RESULT = new NodoSuma(a, b, aleft, aright); :}
@@ -198,5 +242,8 @@ expr ::= expr:a PLUS   expr:b  {: RESULT = new NodoSuma(a, b, aleft, aright); :}
          {: RESULT = new NodoTypeOf(e, pleft, pright); :}
        | TYPEOF:p LPAREN expr:e RPAREN
          {: RESULT = new NodoTypeOf(e, pleft, pright); :}
+       | ID:n LPAREN expr_list:a RPAREN
+         {: RESULT = new NodoLlamada(n, (List)a, nleft, nright); :}
+       | ID:n LPAREN RPAREN
+         {: RESULT = new NodoLlamada(n, new ArrayList(), nleft, nright); :}
        ;
-

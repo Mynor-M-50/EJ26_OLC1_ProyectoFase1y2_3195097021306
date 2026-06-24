@@ -8,6 +8,20 @@ public class Entorno {
     // Singleton = una sola instancia global
     private static Entorno instancia;
 
+    private static final Map<String, com.golite.ast.sentencias.NodoFuncion> funciones = new HashMap<>();
+
+    public static void registrarFuncion(String nombre, com.golite.ast.sentencias.NodoFuncion funcion) {
+        funciones.put(nombre, funcion);
+    }
+
+    public static com.golite.ast.sentencias.NodoFuncion obtenerFuncion(String nombre, int linea, int columna) {
+        if (funciones.containsKey(nombre))
+            return funciones.get(nombre);
+        String msg = "Funcion '" + nombre + "' no declarada, linea " + linea;
+        Interprete.getInstancia().agregarError(msg, linea, columna, "semantico");
+        throw new RuntimeException(msg);
+    }
+
     public static Entorno getInstancia() {
         if (instancia == null)
             instancia = new Entorno(null);
@@ -16,6 +30,7 @@ public class Entorno {
 
     public static void resetear() {
         instancia = new Entorno(null);
+        funciones.clear();
     }
 
     // Cada variable tiene nombre, tipo y valor
