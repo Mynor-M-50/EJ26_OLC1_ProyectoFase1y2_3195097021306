@@ -8,25 +8,26 @@ import java.util.ArrayList;
 import java.util.List;
 
 parser code {:
-    public void report_error(String message, Object info) {
-        if (info instanceof Symbol) {
-            Symbol s = (Symbol) info;
-            String msg = "Error sintáctico cerca de '" + s.value + "'";
-            com.golite.interpreter.Interprete.getInstancia()
-                .agregarError(msg, s.left, s.right, "sintáctico");
-            System.err.println(msg + " línea " + s.left);
-        } else {
-            com.golite.interpreter.Interprete.getInstancia()
-                .agregarError(message, 0, 0, "sintáctico");
-        }
+    public void syntax_error(java_cup.runtime.Symbol s) {
+        String val = s.value != null ? s.value.toString() : "desconocido";
+        String msg = "Error sintactico cerca de '" + val + "'";
+        com.golite.interpreter.Interprete.getInstancia()
+            .agregarError(msg, s.left, s.right, "sintactico");
     }
-    public void report_fatal_error(String message, Object info) {
-        report_error(message, info);
-        throw new RuntimeException("Error sintactico: " + message);
+
+    public void unrecovered_syntax_error(java_cup.runtime.Symbol s) {
+        String val = s.value != null ? s.value.toString() : "desconocido";
+        String msg = "Error sintactico no recuperable cerca de '" + val + "'";
+        com.golite.interpreter.Interprete.getInstancia()
+            .agregarError(msg, s.left, s.right, "sintactico");
     }
+
+    public void report_error(String message, Object info) { }
+    public void report_fatal_error(String message, Object info) { }
 :};
 
 terminal VAR, FUNC, MAIN, IF, ELSE, FOR, BREAK, CONTINUE, RETURN;
+terminal SWITCH, CASE, DEFAULT;
 terminal NIL, UMINUS;
 terminal TINT, TFLOAT64, TSTRING, TBOOL, TRUNE;
 terminal PRINTLN, ATOI, PARSEFLOAT, TYPEOF;
@@ -34,8 +35,8 @@ terminal PLUS, MINUS, TIMES, DIV, MOD, INC, DEC;
 terminal ASSIGN, DECL_ASSIGN, PLUS_ASSIGN, MINUS_ASSIGN;
 terminal EQ, NEQ, LT, GT, LEQ, GEQ;
 terminal AND, OR, NOT;
-terminal LPAREN, RPAREN, LBRACE, RBRACE;
-terminal COMMA, SEMICOLON, DOT;
+terminal LPAREN, RPAREN, LBRACE, RBRACE, LBRACKET, RBRACKET;
+terminal COMMA, SEMICOLON, DOT, COLON;
 terminal String      ID, STRING_LIT;
 terminal Integer     INT_LIT;
 terminal Double      FLOAT_LIT;
@@ -54,6 +55,9 @@ non terminal NodoIf              if_stmt;
 non terminal NodoAST             for_stmt;
 non terminal NodoAST             print_stmt;
 non terminal String              opt_semi;
+non terminal NodoAST             switch_stmt;
+non terminal List<NodoAST>       case_list;
+non terminal NodoAST             case_clause;
 
 precedence left OR;
 precedence left AND;
@@ -70,8 +74,10 @@ program ::= FUNC MAIN LPAREN RPAREN LBRACE stmt_list:s RBRACE
           ;
 
 stmt_list ::= stmt_list:sl stmt:s
-              {: sl.add(s); RESULT = sl; :}
-            | stmt_list:sl error opt_semi
+              {: if (s != null) { sl.add(s); } RESULT = sl; :}
+            | stmt_list:sl error SEMICOLON
+              {: RESULT = sl; :}
+            | stmt_list:sl error RBRACE
               {: RESULT = sl; :}
             |
               {: RESULT = new ArrayList<>(); :}
@@ -84,6 +90,7 @@ stmt ::= decl_stmt:d   opt_semi  {: RESULT = d; :}
        | if_stmt:i               {: RESULT = i; :}
        | for_stmt:f              {: RESULT = f; :}
        | print_stmt:p  opt_semi  {: RESULT = p; :}
+       | switch_stmt:s           {: RESULT = s; :}
        | BREAK:b        opt_semi {: RESULT = new NodoBreak(bleft, bright); :}
        | CONTINUE:c     opt_semi {: RESULT = new NodoContinue(cleft, cright); :}
        | LBRACE stmt_list:sl RBRACE
@@ -137,6 +144,22 @@ print_stmt ::= PRINTLN:p LPAREN expr_list:args RPAREN
                {: RESULT = new NodoPrintln(new ArrayList<>(), pleft, pright); :}
              ;
 
+switch_stmt ::= SWITCH:s expr:e LBRACE case_list:cl RBRACE
+                {: RESULT = new NodoSwitch(e, cl, null, sleft, sright); :}
+              | SWITCH:s expr:e LBRACE case_list:cl DEFAULT COLON stmt_list:dl RBRACE
+                {: RESULT = new NodoSwitch(e, cl, dl, sleft, sright); :}
+              ;
+
+case_list ::= case_list:cl case_clause:c
+              {: cl.add(c); RESULT = cl; :}
+            |
+              {: RESULT = new ArrayList<>(); :}
+            ;
+
+case_clause ::= CASE:c expr:e COLON stmt_list:sl
+                {: RESULT = new NodoCaso(e, sl, cleft, cright); :}
+              ;
+
 expr_list ::= expr_list:el COMMA expr:e
               {: el.add(e); RESULT = el; :}
             | expr:e
@@ -176,3 +199,4 @@ expr ::= expr:a PLUS   expr:b  {: RESULT = new NodoSuma(a, b, aleft, aright); :}
        | TYPEOF:p LPAREN expr:e RPAREN
          {: RESULT = new NodoTypeOf(e, pleft, pright); :}
        ;
+

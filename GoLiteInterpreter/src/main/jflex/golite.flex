@@ -56,6 +56,9 @@ RuneLiteral     = \'([^\'\\\n]|\\.)\'
 "true"               { return token(Sym.TRUE,         "TRUE",  true); }
 "false"              { return token(Sym.FALSE,        "FALSE", false); }
 "nil"                { return token(Sym.NIL,          "NIL"); }
+"switch"    { return new Symbol(Sym.SWITCH,   yyline+1, yycolumn+1); }
+"case"      { return new Symbol(Sym.CASE,     yyline+1, yycolumn+1); }
+"default"   { return new Symbol(Sym.DEFAULT,  yyline+1, yycolumn+1); }
 
 /* ── Tipos de datos ── */
 "int"                { return token(Sym.TINT,         "TINT"); }
@@ -106,6 +109,7 @@ RuneLiteral     = \'([^\'\\\n]|\\.)\'
 ","   { return token(Sym.COMMA,     "COMMA"); }
 ";"   { return token(Sym.SEMICOLON, "SEMICOLON"); }
 "."   { return token(Sym.DOT,       "DOT"); }
+":"   { return token(Sym.COLON,    "COLON"); }
 
 /* ── Literales ── */
 {IntLiteral}    { return token(Sym.INT_LIT,    "INT_LIT",    Integer.parseInt(yytext())); }

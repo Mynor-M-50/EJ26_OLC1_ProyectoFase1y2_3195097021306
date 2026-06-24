@@ -8,62 +8,68 @@ package com.golite.parser;
 /** CUP generated interface containing symbol constants. */
 public interface Sym {
   /* terminals */
-  public static final int FLOAT_LIT = 52;
-  public static final int TSTRING = 15;
-  public static final int UMINUS = 12;
-  public static final int PLUS_ASSIGN = 31;
-  public static final int TFLOAT64 = 14;
-  public static final int LPAREN = 42;
+  public static final int FLOAT_LIT = 58;
+  public static final int TSTRING = 18;
+  public static final int LBRACKET = 49;
+  public static final int UMINUS = 15;
+  public static final int PLUS_ASSIGN = 34;
+  public static final int TFLOAT64 = 17;
+  public static final int CASE = 12;
+  public static final int LPAREN = 45;
   public static final int CONTINUE = 9;
-  public static final int DECL_ASSIGN = 30;
-  public static final int PRINTLN = 18;
+  public static final int DECL_ASSIGN = 33;
+  public static final int PRINTLN = 21;
   public static final int FOR = 7;
-  public static final int MINUS = 23;
-  public static final int RPAREN = 43;
-  public static final int SEMICOLON = 47;
-  public static final int NOT = 41;
-  public static final int AND = 39;
-  public static final int LT = 35;
-  public static final int PARSEFLOAT = 20;
-  public static final int TYPEOF = 21;
-  public static final int NIL = 11;
-  public static final int OR = 40;
-  public static final int COMMA = 46;
-  public static final int TBOOL = 16;
-  public static final int INC = 27;
-  public static final int DIV = 25;
-  public static final int GEQ = 38;
-  public static final int ATOI = 19;
-  public static final int PLUS = 22;
-  public static final int ASSIGN = 29;
+  public static final int MINUS = 26;
+  public static final int RPAREN = 46;
+  public static final int SEMICOLON = 52;
+  public static final int NOT = 44;
+  public static final int AND = 42;
+  public static final int LT = 38;
+  public static final int PARSEFLOAT = 23;
+  public static final int TYPEOF = 24;
+  public static final int NIL = 14;
+  public static final int OR = 43;
+  public static final int COMMA = 51;
+  public static final int TBOOL = 19;
+  public static final int INC = 30;
+  public static final int DIV = 28;
+  public static final int GEQ = 41;
+  public static final int ATOI = 22;
+  public static final int PLUS = 25;
+  public static final int ASSIGN = 32;
   public static final int MAIN = 4;
   public static final int IF = 5;
-  public static final int ID = 49;
-  public static final int DOT = 48;
-  public static final int RUNE_LIT = 55;
+  public static final int ID = 55;
+  public static final int DOT = 53;
+  public static final int RUNE_LIT = 61;
   public static final int EOF = 0;
   public static final int RETURN = 10;
-  public static final int TRUE = 53;
+  public static final int RBRACKET = 50;
+  public static final int TRUE = 59;
   public static final int error = 1;
-  public static final int MOD = 26;
-  public static final int NEQ = 34;
+  public static final int MOD = 29;
+  public static final int NEQ = 37;
   public static final int BREAK = 8;
-  public static final int EQ = 33;
-  public static final int TRUNE = 17;
-  public static final int TIMES = 24;
-  public static final int TINT = 13;
-  public static final int LBRACE = 44;
+  public static final int EQ = 36;
+  public static final int SWITCH = 11;
+  public static final int TRUNE = 20;
+  public static final int TIMES = 27;
+  public static final int COLON = 54;
+  public static final int TINT = 16;
+  public static final int LBRACE = 47;
   public static final int ELSE = 6;
   public static final int FUNC = 3;
-  public static final int RBRACE = 45;
-  public static final int LEQ = 37;
-  public static final int DEC = 28;
-  public static final int FALSE = 54;
-  public static final int STRING_LIT = 50;
-  public static final int INT_LIT = 51;
-  public static final int GT = 36;
+  public static final int DEFAULT = 13;
+  public static final int RBRACE = 48;
+  public static final int LEQ = 40;
+  public static final int DEC = 31;
+  public static final int FALSE = 60;
+  public static final int STRING_LIT = 56;
+  public static final int INT_LIT = 57;
+  public static final int GT = 39;
+  public static final int MINUS_ASSIGN = 35;
   public static final int VAR = 2;
-  public static final int MINUS_ASSIGN = 32;
   public static final String[] terminalNames = new String[] {
   "EOF",
   "error",
@@ -76,6 +82,9 @@ public interface Sym {
   "BREAK",
   "CONTINUE",
   "RETURN",
+  "SWITCH",
+  "CASE",
+  "DEFAULT",
   "NIL",
   "UMINUS",
   "TINT",
@@ -111,9 +120,12 @@ public interface Sym {
   "RPAREN",
   "LBRACE",
   "RBRACE",
+  "LBRACKET",
+  "RBRACKET",
   "COMMA",
   "SEMICOLON",
   "DOT",
+  "COLON",
   "ID",
   "STRING_LIT",
   "INT_LIT",
