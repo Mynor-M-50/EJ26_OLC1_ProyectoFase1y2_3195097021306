@@ -43,6 +43,7 @@ terminal Double      FLOAT_LIT;
 terminal Boolean     TRUE, FALSE;
 terminal Character   RUNE_LIT;
 terminal APPEND, LEN, SLICES_INDEX, STRINGS_JOIN;
+terminal RANGE;
 
 non terminal NodoPrograma        program;
 non terminal List                func_list;
@@ -191,6 +192,10 @@ for_stmt ::= FOR expr:c LBRACE stmt_list:b RBRACE
              {: RESULT = new NodoFor(c, null, null, (List)b, cleft, cright); :}
            | FOR decl_stmt:i SEMICOLON expr:c SEMICOLON assign_stmt:u LBRACE stmt_list:b RBRACE
              {: RESULT = new NodoFor(c, i, u, (List)b, cleft, cright); :}
+           | FOR ID:i COMMA ID:v DECL_ASSIGN RANGE expr:s LBRACE stmt_list:b RBRACE
+             {: RESULT = new NodoForRange(i, v, s, (List)b, ileft, iright); :}
+           | FOR ID:v DECL_ASSIGN RANGE expr:s LBRACE stmt_list:b RBRACE
+             {: RESULT = new NodoForRange(null, v, s, (List)b, vleft, vright); :}
            ;
 
 print_stmt ::= PRINTLN:p LPAREN expr_list:args RPAREN

@@ -59,6 +59,7 @@ RuneLiteral     = \'([^\'\\\n]|\\.)\'
 "switch"    { return new Symbol(Sym.SWITCH,   yyline+1, yycolumn+1); }
 "case"      { return new Symbol(Sym.CASE,     yyline+1, yycolumn+1); }
 "default"   { return new Symbol(Sym.DEFAULT,  yyline+1, yycolumn+1); }
+"range"              { return token(Sym.RANGE, "RANGE"); }
 
 /* ── Tipos de datos ── */
 "int"                { return token(Sym.TINT,         "TINT"); }

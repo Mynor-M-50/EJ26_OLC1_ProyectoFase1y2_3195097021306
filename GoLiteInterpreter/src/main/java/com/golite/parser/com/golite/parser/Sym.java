@@ -26,6 +26,7 @@ public interface Sym {
   public static final int SEMICOLON = 52;
   public static final int NOT = 44;
   public static final int AND = 42;
+  public static final int RANGE = 66;
   public static final int APPEND = 62;
   public static final int LT = 38;
   public static final int PARSEFLOAT = 23;
@@ -140,7 +141,8 @@ public interface Sym {
   "APPEND",
   "LEN",
   "SLICES_INDEX",
-  "STRINGS_JOIN"
+  "STRINGS_JOIN",
+  "RANGE"
   };
 }
 
