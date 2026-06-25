@@ -72,6 +72,10 @@ RuneLiteral     = \'([^\'\\\n]|\\.)\'
 "strconv.Atoi"       { return token(Sym.ATOI,         "ATOI"); }
 "strconv.ParseFloat" { return token(Sym.PARSEFLOAT,   "PARSEFLOAT"); }
 "reflect.TypeOf"     { return token(Sym.TYPEOF,       "TYPEOF"); }
+"append"             { return token(Sym.APPEND,       "APPEND"); }
+"len"                { return token(Sym.LEN,           "LEN"); }
+"slices.Index"       { return token(Sym.SLICES_INDEX,  "SLICES_INDEX"); }
+"strings.Join"       { return token(Sym.STRINGS_JOIN,  "STRINGS_JOIN"); }
 
 /* ── Operadores de comparacin ── */
 "=="  { return token(Sym.EQ,           "EQ"); }
@@ -110,6 +114,8 @@ RuneLiteral     = \'([^\'\\\n]|\\.)\'
 ";"   { return token(Sym.SEMICOLON, "SEMICOLON"); }
 "."   { return token(Sym.DOT,       "DOT"); }
 ":"   { return token(Sym.COLON,    "COLON"); }
+"["   { return token(Sym.LBRACKET, "LBRACKET"); }
+"]"   { return token(Sym.RBRACKET, "RBRACKET"); }
 
 /* ── Literales ── */
 {IntLiteral}    { return token(Sym.INT_LIT,    "INT_LIT",    Integer.parseInt(yytext())); }

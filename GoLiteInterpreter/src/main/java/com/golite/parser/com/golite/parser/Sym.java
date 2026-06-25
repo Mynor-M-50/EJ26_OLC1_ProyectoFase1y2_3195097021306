@@ -19,12 +19,14 @@ public interface Sym {
   public static final int CONTINUE = 9;
   public static final int DECL_ASSIGN = 33;
   public static final int PRINTLN = 21;
+  public static final int STRINGS_JOIN = 65;
   public static final int FOR = 7;
   public static final int MINUS = 26;
   public static final int RPAREN = 46;
   public static final int SEMICOLON = 52;
   public static final int NOT = 44;
   public static final int AND = 42;
+  public static final int APPEND = 62;
   public static final int LT = 38;
   public static final int PARSEFLOAT = 23;
   public static final int TYPEOF = 24;
@@ -63,11 +65,13 @@ public interface Sym {
   public static final int DEFAULT = 13;
   public static final int RBRACE = 48;
   public static final int LEQ = 40;
+  public static final int LEN = 63;
   public static final int DEC = 31;
   public static final int FALSE = 60;
   public static final int STRING_LIT = 56;
   public static final int INT_LIT = 57;
   public static final int GT = 39;
+  public static final int SLICES_INDEX = 64;
   public static final int MINUS_ASSIGN = 35;
   public static final int VAR = 2;
   public static final String[] terminalNames = new String[] {
@@ -132,7 +136,11 @@ public interface Sym {
   "FLOAT_LIT",
   "TRUE",
   "FALSE",
-  "RUNE_LIT"
+  "RUNE_LIT",
+  "APPEND",
+  "LEN",
+  "SLICES_INDEX",
+  "STRINGS_JOIN"
   };
 }
 

@@ -42,6 +42,7 @@ terminal Integer     INT_LIT;
 terminal Double      FLOAT_LIT;
 terminal Boolean     TRUE, FALSE;
 terminal Character   RUNE_LIT;
+terminal APPEND, LEN, SLICES_INDEX, STRINGS_JOIN;
 
 non terminal NodoPrograma        program;
 non terminal List                func_list;
@@ -63,6 +64,9 @@ non terminal String              opt_semi;
 non terminal NodoAST             switch_stmt;
 non terminal List                case_list;
 non terminal NodoAST             case_clause;
+non terminal NodoAST             slice_literal;
+non terminal List                slice_elementos;
+non terminal String              slice_tipo;
 
 precedence left OR;
 precedence left AND;
@@ -139,6 +143,8 @@ stmt ::= decl_stmt:d   opt_semi  {: RESULT = d; :}
          {: RESULT = new NodoLlamada(n, new ArrayList(), nleft, nright); :}
        | LBRACE stmt_list:sl RBRACE
          {: RESULT = new NodoBloque((List)sl, 0, 0); :}
+       | ID:n LBRACKET expr:i RBRACKET ASSIGN expr:e opt_semi
+         {: RESULT = new NodoAsignacionSlice(n, i, e, nleft, nright); :}
        ;
 
 decl_stmt ::= VAR ID:n tipo:t ASSIGN expr:e
@@ -154,6 +160,11 @@ tipo ::= TINT      {: RESULT = "int"; :}
        | TSTRING   {: RESULT = "string"; :}
        | TBOOL     {: RESULT = "bool"; :}
        | TRUNE     {: RESULT = "rune"; :}
+       | LBRACKET RBRACKET TINT     {: RESULT = "[]int"; :}
+       | LBRACKET RBRACKET TFLOAT64 {: RESULT = "[]float64"; :}
+       | LBRACKET RBRACKET TSTRING  {: RESULT = "[]string"; :}
+       | LBRACKET RBRACKET TBOOL    {: RESULT = "[]bool"; :}
+       | LBRACKET RBRACKET TRUNE    {: RESULT = "[]rune"; :}
        ;
 
 assign_stmt ::= ID:n ASSIGN expr:e
@@ -246,4 +257,30 @@ expr ::= expr:a PLUS   expr:b  {: RESULT = new NodoSuma(a, b, aleft, aright); :}
          {: RESULT = new NodoLlamada(n, (List)a, nleft, nright); :}
        | ID:n LPAREN RPAREN
          {: RESULT = new NodoLlamada(n, new ArrayList(), nleft, nright); :}
+       | LBRACKET RBRACKET TINT LBRACE expr_list:el RBRACE
+         {: RESULT = new NodoSlice("int", (List)el, 0, 0); :}
+       | LBRACKET RBRACKET TINT LBRACE RBRACE
+         {: RESULT = new NodoSlice("int", new ArrayList(), 0, 0); :}
+       | LBRACKET RBRACKET TFLOAT64 LBRACE expr_list:el RBRACE
+         {: RESULT = new NodoSlice("float64", (List)el, 0, 0); :}
+       | LBRACKET RBRACKET TFLOAT64 LBRACE RBRACE
+         {: RESULT = new NodoSlice("float64", new ArrayList(), 0, 0); :}
+       | LBRACKET RBRACKET TSTRING LBRACE expr_list:el RBRACE
+         {: RESULT = new NodoSlice("string", (List)el, 0, 0); :}
+       | LBRACKET RBRACKET TSTRING LBRACE RBRACE
+         {: RESULT = new NodoSlice("string", new ArrayList(), 0, 0); :}
+       | LBRACKET RBRACKET TBOOL LBRACE expr_list:el RBRACE
+         {: RESULT = new NodoSlice("bool", (List)el, 0, 0); :}
+       | LBRACKET RBRACKET TBOOL LBRACE RBRACE
+         {: RESULT = new NodoSlice("bool", new ArrayList(), 0, 0); :}
+       | expr:s LBRACKET expr:i RBRACKET
+         {: RESULT = new NodoAccesoSlice(s, i, sleft, sright); :}
+       | APPEND:p LPAREN expr:s COMMA expr:v RPAREN
+         {: RESULT = new NodoAppend(s, v, pleft, pright); :}
+       | LEN:p LPAREN expr:e RPAREN
+         {: RESULT = new NodoLen(e, pleft, pright); :}
+       | SLICES_INDEX:p LPAREN expr:s COMMA expr:v RPAREN
+         {: RESULT = new NodoSlicesIndex(s, v, pleft, pright); :}
+       | STRINGS_JOIN:p LPAREN expr:s COMMA expr:v RPAREN
+         {: RESULT = new NodoStringsJoin(s, v, pleft, pright); :}
        ;
