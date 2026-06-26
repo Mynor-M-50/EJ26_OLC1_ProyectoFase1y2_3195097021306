@@ -73,6 +73,7 @@ non terminal NodoAST             struct_func_decl;
 non terminal List                inst_valores;
 non terminal Object[]            inst_valor;
 
+precedence left DOT;
 precedence left OR;
 precedence left AND;
 precedence left EQ, NEQ;
@@ -363,10 +364,10 @@ expr ::= expr:a PLUS   expr:b  {: RESULT = new NodoSuma(a, b, aleft, aright); :}
          {: RESULT = new NodoSlice("[]string", (List)el, 0, 0); :}
        | LBRACKET RBRACKET LBRACKET RBRACKET TSTRING LBRACE RBRACE
          {: RESULT = new NodoSlice("[]string", new ArrayList(), 0, 0); :}
-       | expr:o DOT ID:a
-         {: RESULT = new NodoAccesoAtributo(o, a, oleft, oright); :}
-       | expr:o DOT ID:m LPAREN expr_list:a RPAREN
-         {: RESULT = new NodoLlamadaMetodo(o, m, (List)a, oleft, oright); :}
-       | expr:o DOT ID:m LPAREN RPAREN
-         {: RESULT = new NodoLlamadaMetodo(o, m, new ArrayList(), oleft, oright); :}
+       | ID:o DOT ID:a
+         {: RESULT = new NodoAccesoAtributo(new NodoIdentificador(o, oleft, oright), a, oleft, oright); :}
+       | ID:o DOT ID:m LPAREN expr_list:a RPAREN
+         {: RESULT = new NodoLlamadaMetodo(new NodoIdentificador(o, oleft, oright), m, (List)a, oleft, oright); :}
+       | ID:o DOT ID:m LPAREN RPAREN
+         {: RESULT = new NodoLlamadaMetodo(new NodoIdentificador(o, oleft, oright), m, new ArrayList(), oleft, oright); :}
        ;

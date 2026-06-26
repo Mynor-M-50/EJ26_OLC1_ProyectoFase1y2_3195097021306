@@ -35,11 +35,10 @@ public class NodoFuncionStruct extends NodoAST {
     public Object ejecutar(List<Object> argumentos) {
         Entorno.pushBloque();
         try {
-            // Primer argumento es la instancia del struct
             Map<String, Object> instancia = (Map<String, Object>) argumentos.get(0);
+            // Declarar la referencia al struct con declararStruct
             Entorno.getInstancia().declararStruct(refNombre, instancia, linea, columna);
 
-            // Resto de parametros
             for (int i = 0; i < parametros.size(); i++) {
                 Object[] param = parametros.get(i);
                 String nombreParam = (String) param[0];
@@ -50,6 +49,10 @@ public class NodoFuncionStruct extends NodoAST {
 
             for (NodoAST s : cuerpo)
                 s.interpretar();
+
+            // Propagar cambios al struct original (paso por referencia)
+            Map<String, Object> ref = (Map<String, Object>) Entorno.getInstancia().obtener(refNombre, linea, columna);
+            instancia.putAll(ref);
 
         } catch (ReturnException e) {
             return e.valor;
