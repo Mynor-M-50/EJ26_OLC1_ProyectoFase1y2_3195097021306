@@ -21,16 +21,17 @@ public class NodoSuma extends NodoAST {
         if (izq instanceof Integer && der instanceof Integer)
             return (Integer) izq + (Integer) der;
 
-        // float + float o combinaciones
-        if (izq instanceof Double || der instanceof Double) {
+        // float + float o combinaciones numericas
+        if ((izq instanceof Double || izq instanceof Integer) &&
+                (der instanceof Double || der instanceof Integer)) {
             double a = izq instanceof Integer ? ((Integer) izq).doubleValue() : (Double) izq;
             double b = der instanceof Integer ? ((Integer) der).doubleValue() : (Double) der;
             return a + b;
         }
 
-        // string + string
-        if (izq instanceof String && der instanceof String)
-            return (String) izq + (String) der;
+        // string + cualquier cosa
+        if (izq instanceof String || der instanceof String)
+            return String.valueOf(izq) + String.valueOf(der);
 
         throw new RuntimeException("Operacion invalida en suma, linea " + linea);
     }

@@ -293,27 +293,34 @@ public class VentanaPrincipal extends JFrame {
         try {
             Lexer lexer = new Lexer(new java.io.StringReader(codigo));
             Parser parser = new Parser(lexer);
-            NodoPrograma programa = (NodoPrograma) parser.parse().value;
+            java_cup.runtime.Symbol sym = parser.parse();
+            Object parseResult = (sym != null) ? sym.value : null;
+            NodoPrograma programa = null;
+            if (parseResult instanceof NodoPrograma) {
+                programa = (NodoPrograma) parseResult;
+            }
 
             if (programa != null) {
                 String resultado = Interprete.getInstancia().ejecutar(programa);
                 consolaArea.append(resultado);
-
-                // Filtrar errores sintacticos falsos en lineas con error lexico
-                List<ErrorSemantic> errores = Interprete.getInstancia().getErrores();
-                Set<Integer> lineasLexicas = errores.stream()
-                        .filter(e -> e.tipo.toLowerCase().contains("lex"))
-                        .map(e -> e.linea)
-                        .collect(java.util.stream.Collectors.toSet());
-                errores.removeIf(e -> e.tipo.toLowerCase().contains("sint")
-                        && lineasLexicas.contains(e.linea));
-
-                if (errores.isEmpty()) {
-                    consolaArea.append("\n Ejecucion completada.\n");
-                } else {
-                    consolaArea.append("\n Ejecucion con " + errores.size() + " error(es).\n");
-                }
+            } else {
+                consolaArea.append("\n No se pudo ejecutar debido a errores en el codigo.\n");
             }
+
+            List<ErrorSemantic> errores = Interprete.getInstancia().getErrores();
+            Set<Integer> lineasLexicas = errores.stream()
+                    .filter(e -> e.tipo.toLowerCase().contains("lex"))
+                    .map(e -> e.linea)
+                    .collect(java.util.stream.Collectors.toSet());
+            errores.removeIf(e -> e.tipo.toLowerCase().contains("sint")
+                    && lineasLexicas.contains(e.linea));
+
+            if (errores.isEmpty()) {
+                consolaArea.append("\n Ejecucion completada.\n");
+            } else {
+                consolaArea.append("\n Ejecucion con " + errores.size() + " error(es).\n");
+            }
+
         } catch (RuntimeException ex) {
             String msg = ex.getMessage() != null ? ex.getMessage() : "Error desconocido";
             consolaArea.append("Error: " + msg + "\n");

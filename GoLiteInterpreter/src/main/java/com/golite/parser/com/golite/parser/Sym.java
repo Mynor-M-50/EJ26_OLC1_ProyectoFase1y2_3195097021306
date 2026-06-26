@@ -69,6 +69,7 @@ public interface Sym {
   public static final int LEN = 63;
   public static final int DEC = 31;
   public static final int FALSE = 60;
+  public static final int STRUCT = 67;
   public static final int STRING_LIT = 56;
   public static final int INT_LIT = 57;
   public static final int GT = 39;
@@ -142,7 +143,8 @@ public interface Sym {
   "LEN",
   "SLICES_INDEX",
   "STRINGS_JOIN",
-  "RANGE"
+  "RANGE",
+  "STRUCT"
   };
 }
 

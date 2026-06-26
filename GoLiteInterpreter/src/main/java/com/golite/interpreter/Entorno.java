@@ -1,20 +1,25 @@
 package com.golite.interpreter;
 
+import com.golite.ast.sentencias.NodoFuncion;
+import com.golite.ast.sentencias.NodoFuncionStruct;
+import com.golite.ast.sentencias.NodoStruct;
 import java.util.HashMap;
 import java.util.Map;
 
 public class Entorno {
 
-    // Singleton = una sola instancia global
     private static Entorno instancia;
 
-    private static final Map<String, com.golite.ast.sentencias.NodoFuncion> funciones = new HashMap<>();
+    private static final Map<String, NodoFuncion> funciones         = new HashMap<>();
+    private static final Map<String, NodoStruct>  structs           = new HashMap<>();
+    private static final Map<String, Map<String, NodoFuncionStruct>> metodos = new HashMap<>();
 
-    public static void registrarFuncion(String nombre, com.golite.ast.sentencias.NodoFuncion funcion) {
+    // --- Funciones ---
+    public static void registrarFuncion(String nombre, NodoFuncion funcion) {
         funciones.put(nombre, funcion);
     }
 
-    public static com.golite.ast.sentencias.NodoFuncion obtenerFuncion(String nombre, int linea, int columna) {
+    public static NodoFuncion obtenerFuncion(String nombre, int linea, int columna) {
         if (funciones.containsKey(nombre))
             return funciones.get(nombre);
         String msg = "Funcion '" + nombre + "' no declarada, linea " + linea;
@@ -22,6 +27,38 @@ public class Entorno {
         throw new RuntimeException(msg);
     }
 
+    // --- Structs ---
+    public static void registrarStruct(String nombre, NodoStruct struct) {
+        structs.put(nombre, struct);
+    }
+
+    public static NodoStruct obtenerStruct(String nombre, int linea, int columna) {
+        if (structs.containsKey(nombre))
+            return structs.get(nombre);
+        String msg = "Struct '" + nombre + "' no declarado, linea " + linea;
+        Interprete.getInstancia().agregarError(msg, linea, columna, "semantico");
+        throw new RuntimeException(msg);
+    }
+
+    public static boolean existeStruct(String nombre) {
+        return structs.containsKey(nombre);
+    }
+
+    // --- Metodos de structs ---
+    public static void registrarMetodo(String tipoStruct, String nombre, NodoFuncionStruct metodo) {
+        metodos.computeIfAbsent(tipoStruct, k -> new HashMap<>()).put(nombre, metodo);
+    }
+
+    public static NodoFuncionStruct obtenerMetodo(String tipoStruct, String nombre, int linea, int columna) {
+        Map<String, NodoFuncionStruct> tabla = metodos.get(tipoStruct);
+        if (tabla != null && tabla.containsKey(nombre))
+            return tabla.get(nombre);
+        String msg = "Metodo '" + nombre + "' no existe en struct '" + tipoStruct + "', linea " + linea;
+        Interprete.getInstancia().agregarError(msg, linea, columna, "semantico");
+        throw new RuntimeException(msg);
+    }
+
+    // --- Singleton ---
     public static Entorno getInstancia() {
         if (instancia == null)
             instancia = new Entorno(null);
@@ -31,9 +68,11 @@ public class Entorno {
     public static void resetear() {
         instancia = new Entorno(null);
         funciones.clear();
+        structs.clear();
+        metodos.clear();
     }
 
-    // Cada variable tiene nombre, tipo y valor
+    // --- Variables ---
     private static class Variable {
         String tipo;
         Object valor;
@@ -51,12 +90,6 @@ public class Entorno {
         this.padre = padre;
     }
 
-    // Crear un nuevo entorno hijo (al entrar a un bloque)
-    public Entorno crearHijo() {
-        return new Entorno(this);
-    }
-
-    // Declarar variable
     public void declarar(String nombre, String tipo, Object valor, int linea, int columna) {
         if (tabla.containsKey(nombre)) {
             String msg = "Variable '" + nombre + "' ya declarada en este ambito, linea " + linea;
@@ -66,7 +99,11 @@ public class Entorno {
         tabla.put(nombre, new Variable(tipo, valor));
     }
 
-    // Obtener valor
+    public void declararStruct(String nombre, java.util.Map<String, Object> instancia, int linea, int columna) {
+        String tipo = (String) instancia.get("__tipo__");
+        tabla.put(nombre, new Variable(tipo, instancia));
+    }
+
     public Object obtener(String nombre, int linea, int columna) {
         if (tabla.containsKey(nombre))
             return tabla.get(nombre).valor;
@@ -77,7 +114,6 @@ public class Entorno {
         throw new RuntimeException(msg);
     }
 
-    // Obtener tipo
     public String obtenerTipo(String nombre, int linea, int columna) {
         if (tabla.containsKey(nombre))
             return tabla.get(nombre).tipo;
@@ -88,7 +124,6 @@ public class Entorno {
         throw new RuntimeException(msg);
     }
 
-    // Asignar valor
     public void asignar(String nombre, Object valor, int linea, int columna) {
         if (tabla.containsKey(nombre)) {
             Variable var = tabla.get(nombre);
@@ -100,14 +135,14 @@ public class Entorno {
             padre.asignar(nombre, valor, linea, columna);
             return;
         }
-        String msg = "Variable '" + nombre + "' no declarada, lnea " + linea;
+        String msg = "Variable '" + nombre + "' no declarada, linea " + linea;
         Interprete.getInstancia().agregarError(msg, linea, columna, "semantico");
         throw new RuntimeException(msg);
     }
 
-    // Verificar compatibilidad de tipos
     private void verificarTipo(String tipo, Object valor, int linea, int columna) {
-        if (valor == null) return;
+        if (valor == null || tipo == null) return;
+        if (existeStruct(tipo)) return; // los structs no se verifican por tipo Java
         String msg = null;
         switch (tipo) {
             case "int":
@@ -120,7 +155,7 @@ public class Entorno {
                 break;
             case "string":
                 if (!(valor instanceof String))
-                    msg = "Tipo incompatible: se esperaba string, liea " + linea;
+                    msg = "Tipo incompatible: se esperaba string, linea " + linea;
                 break;
             case "bool":
                 if (!(valor instanceof Boolean))
@@ -137,7 +172,6 @@ public class Entorno {
         }
     }
 
-    // Obtener tabla completa para reportes
     public Map<String, Object[]> obtenerTabla() {
         Map<String, Object[]> resultado = new HashMap<>();
         for (Map.Entry<String, Variable> entry : tabla.entrySet())

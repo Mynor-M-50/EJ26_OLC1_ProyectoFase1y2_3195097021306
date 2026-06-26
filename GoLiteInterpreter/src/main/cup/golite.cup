@@ -44,9 +44,10 @@ terminal Boolean     TRUE, FALSE;
 terminal Character   RUNE_LIT;
 terminal APPEND, LEN, SLICES_INDEX, STRINGS_JOIN;
 terminal RANGE;
+terminal STRUCT;
 
 non terminal NodoPrograma        program;
-non terminal List                func_list;
+non terminal List                top_list;
 non terminal NodoAST             func_decl;
 non terminal List                param_list;
 non terminal List                params;
@@ -65,9 +66,12 @@ non terminal String              opt_semi;
 non terminal NodoAST             switch_stmt;
 non terminal List                case_list;
 non terminal NodoAST             case_clause;
-non terminal NodoAST             slice_literal;
-non terminal List                slice_elementos;
-non terminal String              slice_tipo;
+non terminal NodoAST             struct_decl;
+non terminal List                struct_attrs;
+non terminal Object[]            struct_attr;
+non terminal NodoAST             struct_func_decl;
+non terminal List                inst_valores;
+non terminal Object[]            inst_valor;
 
 precedence left OR;
 precedence left AND;
@@ -79,17 +83,29 @@ precedence right NOT, UMINUS;
 
 start with program;
 
-program ::= func_list:fl FUNC MAIN LPAREN RPAREN LBRACE stmt_list:s RBRACE
-            {: RESULT = new NodoPrograma((List)fl, (List)s); :}
+program ::= top_list:tl FUNC MAIN LPAREN RPAREN LBRACE stmt_list:s RBRACE
+            {: RESULT = new NodoPrograma((List)tl, (List)s); :}
           | FUNC MAIN LPAREN RPAREN LBRACE stmt_list:s RBRACE
             {: RESULT = new NodoPrograma(new ArrayList(), (List)s); :}
           ;
 
-func_list ::= func_list:fl func_decl:f
-              {: ((List)fl).add(f); RESULT = fl; :}
-            | func_decl:f
-              {: List l = new ArrayList(); l.add(f); RESULT = l; :}
-            ;
+top_list ::= top_list:tl func_decl:f
+             {: ((List)tl).add(f); RESULT = tl; :}
+           | top_list:tl struct_decl:s
+             {: ((List)tl).add(s); RESULT = tl; :}
+           | top_list:tl struct_func_decl:sf
+             {: ((List)tl).add(sf); RESULT = tl; :}
+           | top_list:tl error SEMICOLON
+             {: RESULT = tl; :}
+           | top_list:tl error RBRACE
+             {: RESULT = tl; :}
+           | func_decl:f
+             {: List l = new ArrayList(); l.add(f); RESULT = l; :}
+           | struct_decl:s
+             {: List l = new ArrayList(); l.add(s); RESULT = l; :}
+           | struct_func_decl:sf
+             {: List l = new ArrayList(); l.add(sf); RESULT = l; :}
+           ;
 
 func_decl ::= FUNC ID:n LPAREN param_list:p RPAREN tipo:t LBRACE stmt_list:s RBRACE
               {: RESULT = new NodoFuncion(n, (List)p, t, (List)s, nleft, nright); :}
@@ -115,7 +131,7 @@ stmt_list ::= stmt_list:sl stmt:s
               {: if (s != null) { ((List)sl).add(s); } RESULT = sl; :}
             | stmt_list:sl error SEMICOLON
               {: RESULT = sl; :}
-            | stmt_list:sl error RBRACE
+            | stmt_list:sl error
               {: RESULT = sl; :}
             |
               {: RESULT = new ArrayList(); :}
@@ -146,6 +162,14 @@ stmt ::= decl_stmt:d   opt_semi  {: RESULT = d; :}
          {: RESULT = new NodoBloque((List)sl, 0, 0); :}
        | ID:n LBRACKET expr:i RBRACKET ASSIGN expr:e opt_semi
          {: RESULT = new NodoAsignacionSlice(n, i, e, nleft, nright); :}
+       | ID:n DOT ID:a ASSIGN expr:e opt_semi
+         {: RESULT = new NodoAsignacionAtributo(n, a, e, nleft, nright); :}
+       | ID:t ID:n ASSIGN ID:s LBRACE inst_valores:v RBRACE opt_semi
+         {: RESULT = new NodoDeclaracion(n, t, new NodoInstanciaStruct(s, (List)v, nleft, nright), nleft, nright); :}
+       | ID:o DOT ID:m LPAREN expr_list:a RPAREN opt_semi
+         {: RESULT = new NodoLlamadaMetodo(new NodoIdentificador(o, oleft, oright), m, (List)a, oleft, oright); :}
+       | ID:o DOT ID:m LPAREN RPAREN opt_semi
+         {: RESULT = new NodoLlamadaMetodo(new NodoIdentificador(o, oleft, oright), m, new ArrayList(), oleft, oright); :}
        ;
 
 decl_stmt ::= VAR ID:n tipo:t ASSIGN expr:e
@@ -223,6 +247,44 @@ case_clause ::= CASE:c expr:e COLON stmt_list:sl
                 {: RESULT = new NodoCaso(e, (List)sl, cleft, cright); :}
               ;
 
+struct_decl ::= STRUCT ID:n LBRACE struct_attrs:a RBRACE
+                {: RESULT = new NodoStruct(n, (List)a, nleft, nright); :}
+              ;
+
+struct_attrs ::= struct_attrs:al struct_attr:a
+                 {: ((List)al).add(a); RESULT = al; :}
+               | struct_attr:a
+                 {: List l = new ArrayList(); l.add(a); RESULT = l; :}
+               ;
+
+struct_attr ::= tipo:t ID:n SEMICOLON
+                {: RESULT = new Object[]{t, n}; :}
+              | tipo:t ID:n
+                {: RESULT = new Object[]{t, n}; :}
+              | ID:t ID:n SEMICOLON
+                {: RESULT = new Object[]{t, n}; :}
+              | ID:t ID:n
+                {: RESULT = new Object[]{t, n}; :}
+              ;
+
+struct_func_decl ::= FUNC LPAREN ID:r ID:t RPAREN ID:n LPAREN param_list:p RPAREN tipo:rt LBRACE stmt_list:s RBRACE
+                     {: RESULT = new NodoFuncionStruct(r, t, n, (List)p, rt, (List)s, nleft, nright); :}
+                   | FUNC LPAREN ID:r ID:t RPAREN ID:n LPAREN param_list:p RPAREN LBRACE stmt_list:s RBRACE
+                     {: RESULT = new NodoFuncionStruct(r, t, n, (List)p, null, (List)s, nleft, nright); :}
+                   ;
+
+inst_valores ::= inst_valores:il COMMA inst_valor:v
+                 {: ((List)il).add(v); RESULT = il; :}
+               | inst_valor:v
+                 {: List l = new ArrayList(); l.add(v); RESULT = l; :}
+               |
+                 {: RESULT = new ArrayList(); :}
+               ;
+
+inst_valor ::= ID:n COLON expr:e
+               {: RESULT = new Object[]{n, e}; :}
+             ;
+
 expr_list ::= expr_list:el COMMA expr:e
               {: ((List)el).add(e); RESULT = el; :}
             | expr:e
@@ -258,8 +320,6 @@ expr ::= expr:a PLUS   expr:b  {: RESULT = new NodoSuma(a, b, aleft, aright); :}
        | PARSEFLOAT:p LPAREN expr:e RPAREN
          {: RESULT = new NodoParseFloat(e, pleft, pright); :}
        | TYPEOF:p LPAREN expr:e RPAREN DOT ID LPAREN RPAREN
-         {: RESULT = new NodoTypeOf(e, pleft, pright); :}
-       | TYPEOF:p LPAREN expr:e RPAREN
          {: RESULT = new NodoTypeOf(e, pleft, pright); :}
        | ID:n LPAREN expr_list:a RPAREN
          {: RESULT = new NodoLlamada(n, (List)a, nleft, nright); :}
@@ -303,4 +363,10 @@ expr ::= expr:a PLUS   expr:b  {: RESULT = new NodoSuma(a, b, aleft, aright); :}
          {: RESULT = new NodoSlice("[]string", (List)el, 0, 0); :}
        | LBRACKET RBRACKET LBRACKET RBRACKET TSTRING LBRACE RBRACE
          {: RESULT = new NodoSlice("[]string", new ArrayList(), 0, 0); :}
+       | expr:o DOT ID:a
+         {: RESULT = new NodoAccesoAtributo(o, a, oleft, oright); :}
+       | expr:o DOT ID:m LPAREN expr_list:a RPAREN
+         {: RESULT = new NodoLlamadaMetodo(o, m, (List)a, oleft, oright); :}
+       | expr:o DOT ID:m LPAREN RPAREN
+         {: RESULT = new NodoLlamadaMetodo(o, m, new ArrayList(), oleft, oright); :}
        ;
