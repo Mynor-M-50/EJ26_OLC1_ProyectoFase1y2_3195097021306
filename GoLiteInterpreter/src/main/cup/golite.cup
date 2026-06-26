@@ -166,6 +166,9 @@ tipo ::= TINT      {: RESULT = "int"; :}
        | LBRACKET RBRACKET TSTRING  {: RESULT = "[]string"; :}
        | LBRACKET RBRACKET TBOOL    {: RESULT = "[]bool"; :}
        | LBRACKET RBRACKET TRUNE    {: RESULT = "[]rune"; :}
+       | LBRACKET RBRACKET LBRACKET RBRACKET TINT     {: RESULT = "[][]int"; :}
+       | LBRACKET RBRACKET LBRACKET RBRACKET TFLOAT64 {: RESULT = "[][]float64"; :}
+       | LBRACKET RBRACKET LBRACKET RBRACKET TSTRING  {: RESULT = "[][]string"; :}
        ;
 
 assign_stmt ::= ID:n ASSIGN expr:e
@@ -288,4 +291,16 @@ expr ::= expr:a PLUS   expr:b  {: RESULT = new NodoSuma(a, b, aleft, aright); :}
          {: RESULT = new NodoSlicesIndex(s, v, pleft, pright); :}
        | STRINGS_JOIN:p LPAREN expr:s COMMA expr:v RPAREN
          {: RESULT = new NodoStringsJoin(s, v, pleft, pright); :}
+       | LBRACKET RBRACKET LBRACKET RBRACKET TINT LBRACE expr_list:el RBRACE
+         {: RESULT = new NodoSlice("[]int", (List)el, 0, 0); :}
+       | LBRACKET RBRACKET LBRACKET RBRACKET TINT LBRACE RBRACE
+         {: RESULT = new NodoSlice("[]int", new ArrayList(), 0, 0); :}
+       | LBRACKET RBRACKET LBRACKET RBRACKET TFLOAT64 LBRACE expr_list:el RBRACE
+         {: RESULT = new NodoSlice("[]float64", (List)el, 0, 0); :}
+       | LBRACKET RBRACKET LBRACKET RBRACKET TFLOAT64 LBRACE RBRACE
+         {: RESULT = new NodoSlice("[]float64", new ArrayList(), 0, 0); :}
+       | LBRACKET RBRACKET LBRACKET RBRACKET TSTRING LBRACE expr_list:el RBRACE
+         {: RESULT = new NodoSlice("[]string", (List)el, 0, 0); :}
+       | LBRACKET RBRACKET LBRACKET RBRACKET TSTRING LBRACE RBRACE
+         {: RESULT = new NodoSlice("[]string", new ArrayList(), 0, 0); :}
        ;
