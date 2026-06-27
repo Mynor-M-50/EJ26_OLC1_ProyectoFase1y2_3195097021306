@@ -20,6 +20,11 @@ public class NodoAccesoSlice extends NodoAST {
         Object s = slice.interpretar();
         Object i = indice.interpretar();
 
+        if (s == null) {
+            String msg = "Operacion invalida sobre nil, linea " + linea;
+            Interprete.getInstancia().agregarError(msg, linea, columna, "semantico");
+            throw new RuntimeException(msg);
+        }
         if (!(s instanceof List)) {
             String msg = "No es un slice, linea " + linea;
             Interprete.getInstancia().agregarError(msg, linea, columna, "semantico");

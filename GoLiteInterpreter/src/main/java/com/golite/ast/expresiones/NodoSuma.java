@@ -17,6 +17,12 @@ public class NodoSuma extends NodoAST {
         Object izq = izquierda.interpretar();
         Object der = derecha.interpretar();
 
+        if (izq == null || der == null) {
+            String msg = "Operacion invalida sobre nil, linea " + linea;
+            com.golite.interpreter.Interprete.getInstancia().agregarError(msg, linea, columna, "semantico");
+            throw new RuntimeException(msg);
+        }
+
         // int + int
         if (izq instanceof Integer && der instanceof Integer)
             return (Integer) izq + (Integer) der;

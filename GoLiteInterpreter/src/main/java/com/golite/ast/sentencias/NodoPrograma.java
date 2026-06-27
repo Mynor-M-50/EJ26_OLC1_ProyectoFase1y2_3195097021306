@@ -16,24 +16,11 @@ public class NodoPrograma extends NodoAST {
 
     @Override
     public Object interpretar() {
-        // Primero registrar todas las funciones
+        // Primero registrar todas las funciones y structs
         for (NodoAST f : funciones) {
             if (f == null) continue;
             try {
                 f.interpretar();
-            } catch (RuntimeException e) {
-                String msg = e.getMessage() != null ? e.getMessage() : "Error desconocido";
-                Interprete.getInstancia().agregarError(msg, 0, 0, "semantico");
-            }
-        }
-
-        // Luego ejecutar el main
-        for (NodoAST s : sentencias) {
-            if (s == null) continue;
-            try {
-                s.interpretar();
-            } catch (ReturnException e) {
-                break;
             } catch (RuntimeException e) {
                 String msg = e.getMessage() != null ? e.getMessage() : "Error desconocido";
                 boolean yaRegistrado = Interprete.getInstancia().getErrores().stream()
@@ -41,6 +28,17 @@ public class NodoPrograma extends NodoAST {
                 if (!yaRegistrado)
                     Interprete.getInstancia().agregarError(msg, 0, 0, "semantico");
             }
+        }
+
+        // Luego ejecutar el main — un error semantico detiene la ejecucion
+        for (NodoAST s : sentencias) {
+            if (s == null) continue;
+            try {
+                s.interpretar();
+            } catch (ReturnException e) {
+                break;
+            }
+            // RuntimeException sube a Interprete.ejecutar() y detiene el programa
         }
         return null;
     }

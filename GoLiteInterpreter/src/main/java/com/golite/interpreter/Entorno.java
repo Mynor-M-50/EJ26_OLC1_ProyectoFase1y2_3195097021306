@@ -16,6 +16,11 @@ public class Entorno {
 
     // --- Funciones ---
     public static void registrarFuncion(String nombre, NodoFuncion funcion) {
+        if (funciones.containsKey(nombre)) {
+            String msg = "Funcion '" + nombre + "' ya declarada, linea " + funcion.linea;
+            Interprete.getInstancia().agregarError(msg, funcion.linea, funcion.columna, "semantico");
+            throw new RuntimeException(msg);
+        }
         funciones.put(nombre, funcion);
     }
 
@@ -29,6 +34,11 @@ public class Entorno {
 
     // --- Structs ---
     public static void registrarStruct(String nombre, NodoStruct struct) {
+        if (structs.containsKey(nombre)) {
+            String msg = "Struct '" + nombre + "' ya declarado, linea " + struct.linea;
+            Interprete.getInstancia().agregarError(msg, struct.linea, struct.columna, "semantico");
+            throw new RuntimeException(msg);
+        }
         structs.put(nombre, struct);
     }
 

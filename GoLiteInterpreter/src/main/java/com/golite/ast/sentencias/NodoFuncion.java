@@ -3,6 +3,7 @@ package com.golite.ast.sentencias;
 import com.golite.ast.NodoAST;
 import com.golite.interpreter.Entorno;
 import com.golite.interpreter.Interprete;
+import java.util.ArrayList;
 import java.util.List;
 
 public class NodoFuncion extends NodoAST {
@@ -25,8 +26,10 @@ public class NodoFuncion extends NodoAST {
         return null;
     }
 
+    @SuppressWarnings("unchecked")
     public Object ejecutar(List<Object> argumentos) {
         Entorno.pushBloque();
+        Object retorno = null;
         try {
             for (int i = 0; i < parametros.size(); i++) {
                 Object[] param = parametros.get(i);
@@ -40,10 +43,10 @@ public class NodoFuncion extends NodoAST {
                 s.interpretar();
 
         } catch (ReturnException e) {
-            return e.valor;
+            retorno = e.valor;
         } finally {
             Entorno.popBloque();
         }
-        return null;
+        return retorno;
     }
 }

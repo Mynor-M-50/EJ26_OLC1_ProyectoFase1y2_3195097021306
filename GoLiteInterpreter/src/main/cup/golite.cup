@@ -63,6 +63,7 @@ non terminal NodoIf              if_stmt;
 non terminal NodoAST             for_stmt;
 non terminal NodoAST             print_stmt;
 non terminal String              opt_semi;
+non terminal                     opt_comma;
 non terminal NodoAST             switch_stmt;
 non terminal List                case_list;
 non terminal NodoAST             case_clause;
@@ -139,6 +140,7 @@ stmt_list ::= stmt_list:sl stmt:s
             ;
 
 opt_semi ::= SEMICOLON | ;
+opt_comma ::= COMMA | ;
 
 stmt ::= decl_stmt:d   opt_semi  {: RESULT = d; :}
        | assign_stmt:a opt_semi  {: RESULT = a; :}
@@ -163,6 +165,8 @@ stmt ::= decl_stmt:d   opt_semi  {: RESULT = d; :}
          {: RESULT = new NodoBloque((List)sl, 0, 0); :}
        | ID:n LBRACKET expr:i RBRACKET ASSIGN expr:e opt_semi
          {: RESULT = new NodoAsignacionSlice(n, i, e, nleft, nright); :}
+       | ID:n LBRACKET expr:i RBRACKET LBRACKET expr:j RBRACKET ASSIGN expr:e opt_semi
+         {: RESULT = new NodoAsignacionSlice2D(n, i, j, e, nleft, nright); :}
        | ID:n DOT ID:a ASSIGN expr:e opt_semi
          {: RESULT = new NodoAsignacionAtributo(n, a, e, nleft, nright); :}
        | ID:t ID:n ASSIGN ID:s LBRACE inst_valores:v RBRACE opt_semi
@@ -194,6 +198,8 @@ tipo ::= TINT      {: RESULT = "int"; :}
        | LBRACKET RBRACKET LBRACKET RBRACKET TINT     {: RESULT = "[][]int"; :}
        | LBRACKET RBRACKET LBRACKET RBRACKET TFLOAT64 {: RESULT = "[][]float64"; :}
        | LBRACKET RBRACKET LBRACKET RBRACKET TSTRING  {: RESULT = "[][]string"; :}
+       | ID:n     {: RESULT = n; :}
+       | LBRACKET RBRACKET ID:n {: RESULT = "[]" + n; :}
        ;
 
 assign_stmt ::= ID:n ASSIGN expr:e
@@ -262,10 +268,6 @@ struct_attr ::= tipo:t ID:n SEMICOLON
                 {: RESULT = new Object[]{t, n}; :}
               | tipo:t ID:n
                 {: RESULT = new Object[]{t, n}; :}
-              | ID:t ID:n SEMICOLON
-                {: RESULT = new Object[]{t, n}; :}
-              | ID:t ID:n
-                {: RESULT = new Object[]{t, n}; :}
               ;
 
 struct_func_decl ::= FUNC LPAREN ID:r ID:t RPAREN ID:n LPAREN param_list:p RPAREN tipo:rt LBRACE stmt_list:s RBRACE
@@ -313,7 +315,7 @@ expr ::= expr:a PLUS   expr:b  {: RESULT = new NodoSuma(a, b, aleft, aright); :}
        | STRING_LIT:v          {: RESULT = new NodoString(v, vleft, vright); :}
        | TRUE:v                {: RESULT = new NodoBooleano(true,  vleft, vright); :}
        | FALSE:v               {: RESULT = new NodoBooleano(false, vleft, vright); :}
-       | NIL:v                 {: RESULT = new NodoEntero(0, vleft, vright); :}
+       | NIL:v                 {: RESULT = new NodoNil(vleft, vright); :}
        | RUNE_LIT:v            {: RESULT = new NodoRune(v, vleft, vright); :}
        | ID:v                  {: RESULT = new NodoIdentificador(v, vleft, vright); :}
        | ATOI:p LPAREN expr:e RPAREN
@@ -326,19 +328,19 @@ expr ::= expr:a PLUS   expr:b  {: RESULT = new NodoSuma(a, b, aleft, aright); :}
          {: RESULT = new NodoLlamada(n, (List)a, nleft, nright); :}
        | ID:n LPAREN RPAREN
          {: RESULT = new NodoLlamada(n, new ArrayList(), nleft, nright); :}
-       | LBRACKET RBRACKET TINT LBRACE expr_list:el RBRACE
+       | LBRACKET RBRACKET TINT LBRACE expr_list:el opt_comma RBRACE
          {: RESULT = new NodoSlice("int", (List)el, 0, 0); :}
        | LBRACKET RBRACKET TINT LBRACE RBRACE
          {: RESULT = new NodoSlice("int", new ArrayList(), 0, 0); :}
-       | LBRACKET RBRACKET TFLOAT64 LBRACE expr_list:el RBRACE
+       | LBRACKET RBRACKET TFLOAT64 LBRACE expr_list:el opt_comma RBRACE
          {: RESULT = new NodoSlice("float64", (List)el, 0, 0); :}
        | LBRACKET RBRACKET TFLOAT64 LBRACE RBRACE
          {: RESULT = new NodoSlice("float64", new ArrayList(), 0, 0); :}
-       | LBRACKET RBRACKET TSTRING LBRACE expr_list:el RBRACE
+       | LBRACKET RBRACKET TSTRING LBRACE expr_list:el opt_comma RBRACE
          {: RESULT = new NodoSlice("string", (List)el, 0, 0); :}
        | LBRACKET RBRACKET TSTRING LBRACE RBRACE
          {: RESULT = new NodoSlice("string", new ArrayList(), 0, 0); :}
-       | LBRACKET RBRACKET TBOOL LBRACE expr_list:el RBRACE
+       | LBRACKET RBRACKET TBOOL LBRACE expr_list:el opt_comma RBRACE
          {: RESULT = new NodoSlice("bool", (List)el, 0, 0); :}
        | LBRACKET RBRACKET TBOOL LBRACE RBRACE
          {: RESULT = new NodoSlice("bool", new ArrayList(), 0, 0); :}
@@ -352,15 +354,15 @@ expr ::= expr:a PLUS   expr:b  {: RESULT = new NodoSuma(a, b, aleft, aright); :}
          {: RESULT = new NodoSlicesIndex(s, v, pleft, pright); :}
        | STRINGS_JOIN:p LPAREN expr:s COMMA expr:v RPAREN
          {: RESULT = new NodoStringsJoin(s, v, pleft, pright); :}
-       | LBRACKET RBRACKET LBRACKET RBRACKET TINT LBRACE expr_list:el RBRACE
+       | LBRACKET RBRACKET LBRACKET RBRACKET TINT LBRACE expr_list:el opt_comma RBRACE
          {: RESULT = new NodoSlice("[]int", (List)el, 0, 0); :}
        | LBRACKET RBRACKET LBRACKET RBRACKET TINT LBRACE RBRACE
          {: RESULT = new NodoSlice("[]int", new ArrayList(), 0, 0); :}
-       | LBRACKET RBRACKET LBRACKET RBRACKET TFLOAT64 LBRACE expr_list:el RBRACE
+       | LBRACKET RBRACKET LBRACKET RBRACKET TFLOAT64 LBRACE expr_list:el opt_comma RBRACE
          {: RESULT = new NodoSlice("[]float64", (List)el, 0, 0); :}
        | LBRACKET RBRACKET LBRACKET RBRACKET TFLOAT64 LBRACE RBRACE
          {: RESULT = new NodoSlice("[]float64", new ArrayList(), 0, 0); :}
-       | LBRACKET RBRACKET LBRACKET RBRACKET TSTRING LBRACE expr_list:el RBRACE
+       | LBRACKET RBRACKET LBRACKET RBRACKET TSTRING LBRACE expr_list:el opt_comma RBRACE
          {: RESULT = new NodoSlice("[]string", (List)el, 0, 0); :}
        | LBRACKET RBRACKET LBRACKET RBRACKET TSTRING LBRACE RBRACE
          {: RESULT = new NodoSlice("[]string", new ArrayList(), 0, 0); :}
@@ -376,4 +378,8 @@ expr ::= expr:a PLUS   expr:b  {: RESULT = new NodoSuma(a, b, aleft, aright); :}
               a2, oleft, oright); :}
        | TYPEOF:p LPAREN expr:e RPAREN
          {: RESULT = new NodoTypeOf(e, pleft, pright); :}
+       | LBRACE expr_list:el opt_comma RBRACE
+         {: RESULT = new NodoSlice(null, (List)el, 0, 0); :}
+       | LBRACE RBRACE
+         {: RESULT = new NodoSlice(null, new ArrayList(), 0, 0); :}
        ;

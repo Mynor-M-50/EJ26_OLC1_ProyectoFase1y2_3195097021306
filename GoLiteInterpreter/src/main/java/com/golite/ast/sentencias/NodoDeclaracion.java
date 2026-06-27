@@ -2,6 +2,7 @@ package com.golite.ast.sentencias;
 
 import com.golite.ast.NodoAST;
 import com.golite.interpreter.Entorno;
+import java.util.ArrayList;
 
 public class NodoDeclaracion extends NodoAST {
     public String nombre;
@@ -67,7 +68,18 @@ public class NodoDeclaracion extends NodoAST {
                 case "rune":
                     val = '\0';
                     break;
+                case "[]int":
+                case "[]float64":
+                case "[]string":
+                case "[]bool":
+                case "[]rune":
+                case "[][]int":
+                case "[][]float64":
+                case "[][]string":
+                    val = new ArrayList<>();
+                    break;
                 default:
+                    // Tipo struct u otro compuesto — queda null (nil)
                     val = null;
                     break;
             }
