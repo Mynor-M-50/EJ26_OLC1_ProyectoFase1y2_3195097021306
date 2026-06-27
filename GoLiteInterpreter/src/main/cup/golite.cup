@@ -32,7 +32,7 @@ terminal NIL, UMINUS;
 terminal TINT, TFLOAT64, TSTRING, TBOOL, TRUNE;
 terminal PRINTLN, ATOI, PARSEFLOAT, TYPEOF;
 terminal PLUS, MINUS, TIMES, DIV, MOD, INC, DEC;
-terminal ASSIGN, DECL_ASSIGN, PLUS_ASSIGN, MINUS_ASSIGN;
+terminal ASSIGN, DECL_ASSIGN, PLUS_ASSIGN, MINUS_ASSIGN, TIMES_ASSIGN, DIV_ASSIGN;
 terminal EQ, NEQ, LT, GT, LEQ, GEQ;
 terminal AND, OR, NOT;
 terminal LPAREN, RPAREN, LBRACE, RBRACE, LBRACKET, RBRACKET;
@@ -214,10 +214,14 @@ assign_stmt ::= ID:n ASSIGN expr:e
                 {: RESULT = new NodoAsignacion(n, "+=", e, nleft, nright); :}
               | ID:n MINUS_ASSIGN expr:e
                 {: RESULT = new NodoAsignacion(n, "-=", e, nleft, nright); :}
+              | ID:n TIMES_ASSIGN expr:e
+                {: RESULT = new NodoAsignacion(n, "*=", e, nleft, nright); :}
               | ID:n INC
                 {: RESULT = new NodoAsignacion(n, "+=", new NodoEntero(1, nleft, nright), nleft, nright); :}
               | ID:n DEC
                 {: RESULT = new NodoAsignacion(n, "-=", new NodoEntero(1, nleft, nright), nleft, nright); :}
+              | ID:n DIV_ASSIGN expr:e
+                {: RESULT = new NodoAsignacion(n, "/=", e, nleft, nright); :}
               ;
 
 if_stmt ::= IF expr:c LBRACE stmt_list:t RBRACE

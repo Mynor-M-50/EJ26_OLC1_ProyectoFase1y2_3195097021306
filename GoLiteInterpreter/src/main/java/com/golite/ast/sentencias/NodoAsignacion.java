@@ -46,6 +46,26 @@ public class NodoAsignacion extends NodoAST {
                 } else
                     throw new RuntimeException("Operacion -= invalida, linea " + linea);
                 break;
+            case "*=":
+                if (valorActual instanceof Integer && nuevoValor instanceof Integer)
+                    Entorno.getInstancia().asignar(nombre, (Integer) valorActual * (Integer) nuevoValor, linea, columna);
+                else if (valorActual instanceof Double || nuevoValor instanceof Double) {
+                    double a = valorActual instanceof Integer ? ((Integer) valorActual).doubleValue() : (Double) valorActual;
+                    double b = nuevoValor instanceof Integer ? ((Integer) nuevoValor).doubleValue() : (Double) nuevoValor;
+                    Entorno.getInstancia().asignar(nombre, a * b, linea, columna);
+                } else
+                    throw new RuntimeException("Operacion *= invalida, linea " + linea);
+                break;
+            case "/=":
+                if (valorActual instanceof Integer && nuevoValor instanceof Integer)
+                    Entorno.getInstancia().asignar(nombre, (Integer) valorActual / (Integer) nuevoValor, linea, columna);
+                else if (valorActual instanceof Double || nuevoValor instanceof Double) {
+                    double a = valorActual instanceof Integer ? ((Integer) valorActual).doubleValue() : (Double) valorActual;
+                    double b = nuevoValor instanceof Integer ? ((Integer) nuevoValor).doubleValue() : (Double) nuevoValor;
+                    Entorno.getInstancia().asignar(nombre, a / b, linea, columna);
+                } else
+                    throw new RuntimeException("Operacion /= invalida, linea " + linea);
+                break;
         }
         return null;
     }

@@ -114,6 +114,8 @@ RuneLiteral     = \'([^\'\\\n]|\\.)\'
 ":="  { return token(Sym.DECL_ASSIGN,  "DECL_ASSIGN"); }
 "+="  { return token(Sym.PLUS_ASSIGN,  "PLUS_ASSIGN"); }
 "-="  { return token(Sym.MINUS_ASSIGN, "MINUS_ASSIGN"); }
+"*="  { return token(Sym.TIMES_ASSIGN, "TIMES_ASSIGN"); }
+"/="  { return token(Sym.DIV_ASSIGN, "DIV_ASSIGN"); }
 "="   { return token(Sym.ASSIGN,       "ASSIGN"); }
 
 /* ── Operadores aritmeticos ── */
