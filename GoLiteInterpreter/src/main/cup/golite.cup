@@ -55,6 +55,7 @@ non terminal Object[]            param;
 non terminal List                stmt_list;
 non terminal NodoAST             stmt;
 non terminal NodoAST             expr;
+non terminal NodoAST             primary;
 non terminal List                expr_list;
 non terminal String              tipo;
 non terminal NodoAST             decl_stmt;
@@ -75,6 +76,7 @@ non terminal List                inst_valores;
 non terminal Object[]            inst_valor;
 
 precedence left DOT;
+precedence left LBRACKET;
 precedence left OR;
 precedence left AND;
 precedence left EQ, NEQ;
@@ -169,8 +171,12 @@ stmt ::= decl_stmt:d   opt_semi  {: RESULT = d; :}
          {: RESULT = new NodoAsignacionSlice2D(n, i, j, e, nleft, nright); :}
        | ID:n DOT ID:a ASSIGN expr:e opt_semi
          {: RESULT = new NodoAsignacionAtributo(n, a, e, nleft, nright); :}
-       | ID:t ID:n ASSIGN ID:s LBRACE inst_valores:v RBRACE opt_semi
+       | ID:n DOT ID:a1 DOT ID:a2 ASSIGN expr:e opt_semi
+         {: RESULT = new NodoAsignacionAtributoAnidado(n, a1, a2, e, nleft, nright); :}
+       | ID:t ID:n ASSIGN ID:s LBRACE inst_valores:v opt_comma RBRACE opt_semi
          {: RESULT = new NodoDeclaracion(n, t, new NodoInstanciaStruct(s, (List)v, nleft, nright), nleft, nright); :}
+       | ID:t ID:n ASSIGN LBRACE inst_valores:v opt_comma RBRACE opt_semi
+         {: RESULT = new NodoDeclaracion(n, t, new NodoInstanciaStruct(t, (List)v, nleft, nright), nleft, nright); :}
        | ID:o DOT ID:m LPAREN expr_list:a RPAREN opt_semi
          {: RESULT = new NodoLlamadaMetodo(new NodoIdentificador(o, oleft, oright), m, (List)a, oleft, oright); :}
        | ID:o DOT ID:m LPAREN RPAREN opt_semi
@@ -317,7 +323,7 @@ expr ::= expr:a PLUS   expr:b  {: RESULT = new NodoSuma(a, b, aleft, aright); :}
        | FALSE:v               {: RESULT = new NodoBooleano(false, vleft, vright); :}
        | NIL:v                 {: RESULT = new NodoNil(vleft, vright); :}
        | RUNE_LIT:v            {: RESULT = new NodoRune(v, vleft, vright); :}
-       | ID:v                  {: RESULT = new NodoIdentificador(v, vleft, vright); :}
+       | primary:p             {: RESULT = p; :}
        | ATOI:p LPAREN expr:e RPAREN
          {: RESULT = new NodoAtoi(e, pleft, pright); :}
        | PARSEFLOAT:p LPAREN expr:e RPAREN
@@ -344,8 +350,6 @@ expr ::= expr:a PLUS   expr:b  {: RESULT = new NodoSuma(a, b, aleft, aright); :}
          {: RESULT = new NodoSlice("bool", (List)el, 0, 0); :}
        | LBRACKET RBRACKET TBOOL LBRACE RBRACE
          {: RESULT = new NodoSlice("bool", new ArrayList(), 0, 0); :}
-       | expr:s LBRACKET expr:i RBRACKET
-         {: RESULT = new NodoAccesoSlice(s, i, sleft, sright); :}
        | APPEND:p LPAREN expr:s COMMA expr:v RPAREN
          {: RESULT = new NodoAppend(s, v, pleft, pright); :}
        | LEN:p LPAREN expr:e RPAREN
@@ -366,16 +370,10 @@ expr ::= expr:a PLUS   expr:b  {: RESULT = new NodoSuma(a, b, aleft, aright); :}
          {: RESULT = new NodoSlice("[]string", (List)el, 0, 0); :}
        | LBRACKET RBRACKET LBRACKET RBRACKET TSTRING LBRACE RBRACE
          {: RESULT = new NodoSlice("[]string", new ArrayList(), 0, 0); :}
-       | ID:o DOT ID:a
-         {: RESULT = new NodoAccesoAtributo(new NodoIdentificador(o, oleft, oright), a, oleft, oright); :}
        | ID:o DOT ID:m LPAREN expr_list:a RPAREN
          {: RESULT = new NodoLlamadaMetodo(new NodoIdentificador(o, oleft, oright), m, (List)a, oleft, oright); :}
        | ID:o DOT ID:m LPAREN RPAREN
          {: RESULT = new NodoLlamadaMetodo(new NodoIdentificador(o, oleft, oright), m, new ArrayList(), oleft, oright); :}
-       | ID:o DOT ID:a1 DOT ID:a2
-         {: RESULT = new NodoAccesoAtributo(
-              new NodoAccesoAtributo(new NodoIdentificador(o, oleft, oright), a1, oleft, oright),
-              a2, oleft, oright); :}
        | TYPEOF:p LPAREN expr:e RPAREN
          {: RESULT = new NodoTypeOf(e, pleft, pright); :}
        | LBRACE expr_list:el opt_comma RBRACE
@@ -383,3 +381,15 @@ expr ::= expr:a PLUS   expr:b  {: RESULT = new NodoSuma(a, b, aleft, aright); :}
        | LBRACE RBRACE
          {: RESULT = new NodoSlice(null, new ArrayList(), 0, 0); :}
        ;
+
+primary ::= ID:n
+            {: RESULT = new NodoIdentificador(n, nleft, nright); :}
+          | primary:s LBRACKET expr:i RBRACKET
+            {: RESULT = new NodoAccesoSlice(s, i, sleft, sright); :}
+          | ID:o DOT ID:a
+            {: RESULT = new NodoAccesoAtributo(new NodoIdentificador(o, oleft, oright), a, oleft, oright); :}
+          | ID:o DOT ID:a1 DOT ID:a2
+            {: RESULT = new NodoAccesoAtributo(
+                 new NodoAccesoAtributo(new NodoIdentificador(o, oleft, oright), a1, oleft, oright),
+                 a2, oleft, oright); :}
+          ;

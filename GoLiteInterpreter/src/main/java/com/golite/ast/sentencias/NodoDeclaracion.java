@@ -68,18 +68,8 @@ public class NodoDeclaracion extends NodoAST {
                 case "rune":
                     val = '\0';
                     break;
-                case "[]int":
-                case "[]float64":
-                case "[]string":
-                case "[]bool":
-                case "[]rune":
-                case "[][]int":
-                case "[][]float64":
-                case "[][]string":
-                    val = new ArrayList<>();
-                    break;
                 default:
-                    // Tipo struct u otro compuesto — queda null (nil)
+                    // Slices y structs — valor por defecto es nil
                     val = null;
                     break;
             }
