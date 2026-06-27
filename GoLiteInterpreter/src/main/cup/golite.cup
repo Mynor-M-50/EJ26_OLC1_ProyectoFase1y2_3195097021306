@@ -370,4 +370,10 @@ expr ::= expr:a PLUS   expr:b  {: RESULT = new NodoSuma(a, b, aleft, aright); :}
          {: RESULT = new NodoLlamadaMetodo(new NodoIdentificador(o, oleft, oright), m, (List)a, oleft, oright); :}
        | ID:o DOT ID:m LPAREN RPAREN
          {: RESULT = new NodoLlamadaMetodo(new NodoIdentificador(o, oleft, oright), m, new ArrayList(), oleft, oright); :}
+       | ID:o DOT ID:a1 DOT ID:a2
+         {: RESULT = new NodoAccesoAtributo(
+              new NodoAccesoAtributo(new NodoIdentificador(o, oleft, oright), a1, oleft, oright),
+              a2, oleft, oright); :}
+       | TYPEOF:p LPAREN expr:e RPAREN
+         {: RESULT = new NodoTypeOf(e, pleft, pright); :}
        ;

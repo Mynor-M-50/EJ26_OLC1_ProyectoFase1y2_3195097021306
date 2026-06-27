@@ -23,6 +23,10 @@ public class NodoDeclaracion extends NodoAST {
         if (valor != null) {
             try {
                 val = valor.interpretar();
+                // Copia independiente de slices
+                if (val instanceof java.util.ArrayList) {
+                    val = new java.util.ArrayList<>((java.util.ArrayList<?>) val);
+                }
             } catch (RuntimeException e) {
                 errorEnValor = true;
                 String msg = e.getMessage() != null ? e.getMessage() : "Error desconocido";

@@ -32,6 +32,8 @@ public class NodoPrograma extends NodoAST {
             if (s == null) continue;
             try {
                 s.interpretar();
+            } catch (ReturnException e) {
+                break;
             } catch (RuntimeException e) {
                 String msg = e.getMessage() != null ? e.getMessage() : "Error desconocido";
                 boolean yaRegistrado = Interprete.getInstancia().getErrores().stream()

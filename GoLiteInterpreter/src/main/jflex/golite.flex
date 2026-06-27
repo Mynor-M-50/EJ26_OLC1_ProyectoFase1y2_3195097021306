@@ -50,6 +50,24 @@ RuneLiteral     = \'([^\'\\\n]|\\.)\'
 "if"                 { return token(Sym.IF,           "IF"); }
 "else"               { return token(Sym.ELSE,         "ELSE"); }
 "for"                { return token(Sym.FOR,          "FOR"); }
+"return"[ \t]*(\r\n|\r|\n)  {
+    com.golite.interpreter.Interprete.getInstancia()
+        .agregarToken("return", "RETURN", yyline+1, yycolumn+1);
+    return new Symbol(Sym.RETURN, yyline+1, yycolumn+1);
+}
+"break"[ \t]*(\r\n|\r|\n)  {
+    com.golite.interpreter.Interprete.getInstancia()
+        .agregarToken("break", "BREAK", yyline+1, yycolumn+1);
+    return new Symbol(Sym.BREAK, yyline+1, yycolumn+1);
+}
+"continue"[ \t]*(\r\n|\r|\n)  {
+    com.golite.interpreter.Interprete.getInstancia()
+        .agregarToken("continue", "CONTINUE", yyline+1, yycolumn+1);
+    return new Symbol(Sym.CONTINUE, yyline+1, yycolumn+1);
+}
+"break"              { return token(Sym.BREAK,        "BREAK"); }
+"continue"           { return token(Sym.CONTINUE,     "CONTINUE"); }
+"return"             { return token(Sym.RETURN,       "RETURN"); }
 "break"              { return token(Sym.BREAK,        "BREAK"); }
 "continue"           { return token(Sym.CONTINUE,     "CONTINUE"); }
 "return"             { return token(Sym.RETURN,       "RETURN"); }
@@ -129,11 +147,12 @@ RuneLiteral     = \'([^\'\\\n]|\\.)\'
 {Identifier}    { return token(Sym.ID, "ID", yytext()); }
 
 /* ── Comentarios (se ignoran) ── */
-"//"[^\n]*                  { /* comentario de línea */ }
+"//"[^\n]*                  { /* comentario de linea */ }
 "/*"([^*]|\*+[^*/])*\*+"/" { /* comentario de bloque */ }
 
-/* ── Espacios en blanco (debpo ignorarlos) ── */
-{WhiteSpace} { /* ignorar */ }
+/* ── Espacios en blanco ── */
+[ \t\f\r]    { /* ignorar */ }
+\n           { /* ignorar salto de linea */ }
 
 /* ── Error lexico ── */
 [^] {
