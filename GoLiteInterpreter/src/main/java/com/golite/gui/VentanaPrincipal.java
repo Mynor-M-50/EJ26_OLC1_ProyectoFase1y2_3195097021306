@@ -5,6 +5,8 @@ import com.golite.lexer.Lexer;
 import com.golite.parser.Parser;
 import com.golite.ast.sentencias.NodoPrograma;
 import com.golite.errors.ErrorSemantic;
+import com.golite.reports.GeneradorAST;
+import com.golite.reports.GeneradorSimbolos;
 import java.util.List;
 import java.util.Set;
 
@@ -162,8 +164,16 @@ public class VentanaPrincipal extends JFrame {
         JMenuItem itemErrores = new JMenuItem("Reporte de Errores");
         itemErrores.addActionListener(e -> mostrarErrores());
 
+        JMenuItem itemSimbolos = new JMenuItem("Tabla de Simbolos");
+        itemSimbolos.addActionListener(e -> mostrarSimbolos());
+
+        JMenuItem itemAST = new JMenuItem("Reporte AST");
+        itemAST.addActionListener(e -> mostrarAST());
+
         menuReportes.add(itemTokens);
         menuReportes.add(itemErrores);
+        menuReportes.add(itemSimbolos);
+        menuReportes.add(itemAST);
 
         menuBar.add(menuArchivo);
         menuBar.add(menuEjecutar);
@@ -365,6 +375,106 @@ public class VentanaPrincipal extends JFrame {
             }
         }
         mostrarReporte("Reporte de Errores", sb.toString());
+    }
+
+    private void mostrarSimbolos() {
+        String contenido = GeneradorSimbolos.generar();
+        mostrarReporte("Tabla de Simbolos", contenido);
+    }
+
+    private void mostrarAST() {
+        NodoPrograma prog = Interprete.getInstancia().getUltimoPrograma();
+        if (prog == null) {
+            mostrarReporte("Reporte AST", "Ejecuta el codigo primero para generar el AST.");
+            return;
+        }
+        String dot = new GeneradorAST().generar(prog);
+        mostrarReporteDOT("Reporte AST", dot);
+    }
+
+    private void mostrarReporteDOT(String titulo, String dot) {
+        // 1. Crear carpeta reportes/ junto al JAR o en el directorio de trabajo
+        java.io.File carpeta = new java.io.File("reportes");
+        carpeta.mkdirs();
+
+        java.io.File archivoDot = new java.io.File(carpeta, "ast.dot");
+        java.io.File archivoPng = new java.io.File(carpeta, "ast.png");
+
+        // 2. Escribir el .dot
+        try {
+            java.nio.file.Files.writeString(archivoDot.toPath(), dot);
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this, "Error al escribir .dot: " + ex.getMessage());
+            return;
+        }
+
+        // 3. Ejecutar dot -Tpng para generar el PNG
+        boolean pngGenerado = false;
+        try {
+            ProcessBuilder pb = new ProcessBuilder(
+                    "dot", "-Tpng",
+                    archivoDot.getAbsolutePath(),
+                    "-o", archivoPng.getAbsolutePath()
+            );
+            pb.redirectErrorStream(true);
+            Process proc = pb.start();
+            proc.waitFor();
+            pngGenerado = archivoPng.exists() && archivoPng.length() > 0;
+        } catch (Exception ex) {
+            // dot no disponible — seguimos con solo el texto
+        }
+
+        // 4. Construir la ventana
+        JFrame frame = new JFrame(titulo);
+        frame.setSize(900, 650);
+        frame.setLocationRelativeTo(this);
+
+        JTabbedPane tabs = new JTabbedPane();
+
+        // Tab 1: imagen PNG (si se genero)
+        if (pngGenerado) {
+            ImageIcon icono = new ImageIcon(archivoPng.getAbsolutePath());
+            JLabel lblImg = new JLabel(icono);
+            JScrollPane scrollImg = new JScrollPane(lblImg);
+            tabs.addTab("Imagen AST", scrollImg);
+        }
+
+        // Tab 2: texto DOT para copiar/pegar online
+        JTextArea area = new JTextArea(dot);
+        area.setFont(new Font("Monospaced", Font.PLAIN, 12));
+        area.setEditable(false);
+        tabs.addTab("Codigo DOT", new JScrollPane(area));
+
+        // Panel inferior con info y boton
+        JPanel panelBtn = new JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.LEFT, 10, 5));
+        if (pngGenerado) {
+            panelBtn.add(new JLabel("PNG guardado en: " + archivoPng.getAbsolutePath()));
+        } else {
+            panelBtn.add(new JLabel("Pega el DOT en: https://dreampuf.github.io/GraphvizOnline"));
+        }
+        JButton btnCopiar = new JButton("Copiar DOT");
+        btnCopiar.addActionListener(e -> {
+            java.awt.datatransfer.StringSelection sel = new java.awt.datatransfer.StringSelection(dot);
+            java.awt.Toolkit.getDefaultToolkit().getSystemClipboard().setContents(sel, null);
+            JOptionPane.showMessageDialog(frame, "Contenido DOT copiado al portapapeles.");
+        });
+        JButton btnAbrir = new JButton("Abrir carpeta reportes");
+        btnAbrir.addActionListener(e -> {
+            try {
+                java.awt.Desktop.getDesktop().open(carpeta);
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(frame, "No se pudo abrir: " + ex.getMessage());
+            }
+        });
+        panelBtn.add(btnCopiar);
+        panelBtn.add(btnAbrir);
+
+        JPanel panel = new JPanel(new BorderLayout());
+        panel.add(tabs, BorderLayout.CENTER);
+        panel.add(panelBtn, BorderLayout.SOUTH);
+
+        frame.setContentPane(panel);
+        frame.setVisible(true);
     }
 
     private void mostrarReporte(String titulo, String contenido) {

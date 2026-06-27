@@ -28,7 +28,7 @@ public class NodoFuncion extends NodoAST {
 
     @SuppressWarnings("unchecked")
     public Object ejecutar(List<Object> argumentos) {
-        Entorno.pushBloque();
+        Entorno.pushBloqueConAmbito(nombre);
         Object retorno = null;
         try {
             for (int i = 0; i < parametros.size(); i++) {

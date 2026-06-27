@@ -13,6 +13,7 @@ public class Interprete {
     private List<ErrorSemantic> errores;
     private List<String[]> tablaTokens;
     private StringBuilder consola;
+    private NodoPrograma ultimoPrograma;
 
     private int nivelCiclo = 0;
 
@@ -40,6 +41,7 @@ public class Interprete {
     // Ejecutar el programa completo
     public String ejecutar(NodoPrograma programa) {
         consola = new StringBuilder();
+        this.ultimoPrograma = programa;
         Entorno.resetear();
 
         try {
@@ -57,6 +59,8 @@ public class Interprete {
 
         return consola.toString();
     }
+
+    public NodoPrograma getUltimoPrograma() { return ultimoPrograma; }
 
     // Agregar linea a la consola
     public void agregarConsola(String texto) {

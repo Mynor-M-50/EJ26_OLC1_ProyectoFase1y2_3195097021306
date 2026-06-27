@@ -3,7 +3,9 @@ package com.golite.interpreter;
 import com.golite.ast.sentencias.NodoFuncion;
 import com.golite.ast.sentencias.NodoFuncionStruct;
 import com.golite.ast.sentencias.NodoStruct;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class Entorno {
@@ -32,6 +34,8 @@ public class Entorno {
         throw new RuntimeException(msg);
     }
 
+    public static Map<String, NodoFuncion> getFunciones() { return funciones; }
+
     // --- Structs ---
     public static void registrarStruct(String nombre, NodoStruct struct) {
         if (structs.containsKey(nombre)) {
@@ -54,6 +58,8 @@ public class Entorno {
         return structs.containsKey(nombre);
     }
 
+    public static Map<String, NodoStruct> getStructs() { return structs; }
+
     // --- Metodos de structs ---
     public static void registrarMetodo(String tipoStruct, String nombre, NodoFuncionStruct metodo) {
         metodos.computeIfAbsent(tipoStruct, k -> new HashMap<>()).put(nombre, metodo);
@@ -71,33 +77,42 @@ public class Entorno {
     // --- Singleton ---
     public static Entorno getInstancia() {
         if (instancia == null)
-            instancia = new Entorno(null);
+            instancia = new Entorno(null, "Global");
         return instancia;
     }
 
     public static void resetear() {
-        instancia = new Entorno(null);
+        instancia = new Entorno(null, "Global");
         funciones.clear();
         structs.clear();
         metodos.clear();
     }
 
     // --- Variables ---
-    private static class Variable {
-        String tipo;
-        Object valor;
-        Variable(String tipo, Object valor) {
-            this.tipo  = tipo;
-            this.valor = valor;
+    public static class Variable {
+        public String tipo;
+        public Object valor;
+        public int linea;
+        public int columna;
+        public String ambito;
+
+        Variable(String tipo, Object valor, int linea, int columna, String ambito) {
+            this.tipo    = tipo;
+            this.valor   = valor;
+            this.linea   = linea;
+            this.columna = columna;
+            this.ambito  = ambito;
         }
     }
 
     private final Map<String, Variable> tabla;
     private final Entorno padre;
+    public final String ambito;
 
-    public Entorno(Entorno padre) {
-        this.tabla = new HashMap<>();
-        this.padre = padre;
+    public Entorno(Entorno padre, String ambito) {
+        this.tabla  = new HashMap<>();
+        this.padre  = padre;
+        this.ambito = ambito != null ? ambito : (padre != null ? padre.ambito : "Global");
     }
 
     public void declarar(String nombre, String tipo, Object valor, int linea, int columna) {
@@ -106,12 +121,12 @@ public class Entorno {
             Interprete.getInstancia().agregarError(msg, linea, columna, "semantico");
             throw new RuntimeException(msg);
         }
-        tabla.put(nombre, new Variable(tipo, valor));
+        tabla.put(nombre, new Variable(tipo, valor, linea, columna, ambito));
     }
 
     public void declararStruct(String nombre, java.util.Map<String, Object> instancia, int linea, int columna) {
         String tipo = (String) instancia.get("__tipo__");
-        tabla.put(nombre, new Variable(tipo, instancia));
+        tabla.put(nombre, new Variable(tipo, instancia, linea, columna, ambito));
     }
 
     public Object obtener(String nombre, int linea, int columna) {
@@ -152,7 +167,7 @@ public class Entorno {
 
     private void verificarTipo(String tipo, Object valor, int linea, int columna) {
         if (valor == null || tipo == null) return;
-        if (existeStruct(tipo)) return; // los structs no se verifican por tipo Java
+        if (existeStruct(tipo)) return;
         String msg = null;
         switch (tipo) {
             case "int":
@@ -182,6 +197,29 @@ public class Entorno {
         }
     }
 
+    // Recolectar TODAS las variables de todos los scopes para la tabla de simbolos
+    public List<Variable> obtenerTodasVariables() {
+        List<Variable> lista = new ArrayList<>();
+        for (Map.Entry<String, Variable> e : tabla.entrySet()) {
+            Variable v = e.getValue();
+            Variable copia = new Variable(v.tipo, v.valor, v.linea, v.columna, v.ambito);
+            // Guardar el nombre en un campo extra via subclase no es necesario
+            // lo manejamos en GeneradorSimbolos con el nombre como clave
+            lista.add(v);
+        }
+        if (padre != null)
+            lista.addAll(padre.obtenerTodasVariables());
+        return lista;
+    }
+
+    // Para tabla de simbolos necesitamos nombre + variable
+    public void recolectarVariables(Map<String, Variable> destino) {
+        for (Map.Entry<String, Variable> e : tabla.entrySet())
+            destino.putIfAbsent(e.getKey(), e.getValue());
+        if (padre != null)
+            padre.recolectarVariables(destino);
+    }
+
     public Map<String, Object[]> obtenerTabla() {
         Map<String, Object[]> resultado = new HashMap<>();
         for (Map.Entry<String, Variable> entry : tabla.entrySet())
@@ -192,7 +230,11 @@ public class Entorno {
     }
 
     public static void pushBloque() {
-        instancia = new Entorno(instancia);
+        instancia = new Entorno(instancia, instancia != null ? instancia.ambito : "Global");
+    }
+
+    public static void pushBloqueConAmbito(String nuevoAmbito) {
+        instancia = new Entorno(instancia, nuevoAmbito);
     }
 
     public static void popBloque() {
