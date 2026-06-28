@@ -49,6 +49,7 @@ terminal STRUCT;
 non terminal NodoPrograma        program;
 non terminal List                top_list;
 non terminal NodoAST             func_decl;
+non terminal NodoAST             global_stmt;
 non terminal List                param_list;
 non terminal List                params;
 non terminal Object[]            param;
@@ -88,9 +89,9 @@ precedence right NOT, UMINUS;
 start with program;
 
 program ::= top_list:tl FUNC MAIN LPAREN RPAREN LBRACE stmt_list:s RBRACE
-            {: RESULT = new NodoPrograma((List)tl, (List)s); :}
+            {: RESULT = new NodoPrograma((List)tl, (List)s, new ArrayList()); :}
           | FUNC MAIN LPAREN RPAREN LBRACE stmt_list:s RBRACE
-            {: RESULT = new NodoPrograma(new ArrayList(), (List)s); :}
+            {: RESULT = new NodoPrograma(new ArrayList(), (List)s, new ArrayList()); :}
           ;
 
 top_list ::= top_list:tl func_decl:f
@@ -99,6 +100,8 @@ top_list ::= top_list:tl func_decl:f
              {: ((List)tl).add(s); RESULT = tl; :}
            | top_list:tl struct_func_decl:sf
              {: ((List)tl).add(sf); RESULT = tl; :}
+           | top_list:tl global_stmt:st
+             {: ((List)tl).add(st); RESULT = tl; :}
            | top_list:tl error SEMICOLON
              {: RESULT = tl; :}
            | top_list:tl error RBRACE
@@ -109,7 +112,39 @@ top_list ::= top_list:tl func_decl:f
              {: List l = new ArrayList(); l.add(s); RESULT = l; :}
            | struct_func_decl:sf
              {: List l = new ArrayList(); l.add(sf); RESULT = l; :}
+           | global_stmt:st
+             {: List l = new ArrayList(); l.add(st); RESULT = l; :}
            ;
+
+/* Sentencias permitidas en ambito global segun el doc:
+   - Instancia de struct:   Persona p = { ... };
+   - Print:                 fmt.Println(...);
+   - Llamada a metodo:      x.metodo(...);
+   - Declaracion var/decl:  var x int = 5;  x := 5;
+   - Asignacion:            x = 5;
+   - Asignacion atributo:   x.campo = valor;
+*/
+global_stmt ::= ID:t ID:n ASSIGN ID:s LBRACE inst_valores:v opt_comma RBRACE opt_semi
+                {: RESULT = new NodoDeclaracion(n, t, new NodoInstanciaStruct(s, (List)v, nleft, nright), nleft, nright); :}
+              | ID:t ID:n ASSIGN LBRACE inst_valores:v opt_comma RBRACE opt_semi
+                {: RESULT = new NodoDeclaracion(n, t, new NodoInstanciaStruct(t, (List)v, nleft, nright), nleft, nright); :}
+              | print_stmt:p opt_semi
+                {: RESULT = p; :}
+              | ID:o DOT ID:m LPAREN expr_list:a RPAREN opt_semi
+                {: RESULT = new NodoLlamadaMetodo(new NodoIdentificador(o, oleft, oright), m, (List)a, oleft, oright); :}
+              | ID:o DOT ID:m LPAREN RPAREN opt_semi
+                {: RESULT = new NodoLlamadaMetodo(new NodoIdentificador(o, oleft, oright), m, new ArrayList(), oleft, oright); :}
+              | ID:n DOT ID:a ASSIGN expr:e opt_semi
+                {: RESULT = new NodoAsignacionAtributo(n, a, e, nleft, nright); :}
+              | VAR ID:n tipo:t ASSIGN expr:e opt_semi
+                {: RESULT = new NodoDeclaracion(n, t, e, nleft, nright); :}
+              | VAR ID:n tipo:t opt_semi
+                {: RESULT = new NodoDeclaracion(n, t, null, nleft, nright); :}
+              | ID:n DECL_ASSIGN expr:e opt_semi
+                {: RESULT = new NodoDeclaracion(n, null, e, nleft, nright); :}
+              | ID:n ASSIGN expr:e opt_semi
+                {: RESULT = new NodoAsignacion(n, "=", e, nleft, nright); :}
+              ;
 
 func_decl ::= FUNC ID:n LPAREN param_list:p RPAREN tipo:t LBRACE stmt_list:s RBRACE
               {: RESULT = new NodoFuncion(n, (List)p, t, (List)s, nleft, nright); :}

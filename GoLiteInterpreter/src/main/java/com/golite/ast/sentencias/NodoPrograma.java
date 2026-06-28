@@ -2,21 +2,34 @@ package com.golite.ast.sentencias;
 
 import com.golite.ast.NodoAST;
 import com.golite.interpreter.Interprete;
+import java.util.ArrayList;
 import java.util.List;
 
 public class NodoPrograma extends NodoAST {
     public List<NodoAST> funciones;
     public List<NodoAST> sentencias;
+    public List<NodoAST> sentenciasGlobales;
 
-    public NodoPrograma(List<NodoAST> funciones, List<NodoAST> sentencias) {
+    public NodoPrograma(List<NodoAST> topList, List<NodoAST> sentencias, List<NodoAST> ignorado) {
         super(0, 0);
-        this.funciones  = funciones;
         this.sentencias = sentencias;
+        this.funciones = new ArrayList<>();
+        this.sentenciasGlobales = new ArrayList<>();
+        for (NodoAST nodo : topList) {
+            if (nodo == null) continue;
+            if (nodo instanceof NodoFuncion
+                    || nodo instanceof NodoStruct
+                    || nodo instanceof NodoFuncionStruct) {
+                funciones.add(nodo);
+            } else {
+                sentenciasGlobales.add(nodo);
+            }
+        }
     }
 
     @Override
     public Object interpretar() {
-        // Primero registrar todas las funciones y structs
+        // 1. Registrar funciones y structs
         for (NodoAST f : funciones) {
             if (f == null) continue;
             try {
@@ -30,7 +43,23 @@ public class NodoPrograma extends NodoAST {
             }
         }
 
-        // Luego ejecutar el main — un error semantico detiene la ejecucion
+        // 2. Ejecutar sentencias globales (antes del main)
+        for (NodoAST sg : sentenciasGlobales) {
+            if (sg == null) continue;
+            try {
+                sg.interpretar();
+            } catch (ReturnException e) {
+                break;
+            } catch (RuntimeException e) {
+                String msg = e.getMessage() != null ? e.getMessage() : "Error desconocido";
+                boolean yaRegistrado = Interprete.getInstancia().getErrores().stream()
+                        .anyMatch(err -> err.descripcion.equals(msg));
+                if (!yaRegistrado)
+                    Interprete.getInstancia().agregarError(msg, 0, 0, "semantico");
+            }
+        }
+
+        // 3. Ejecutar el main
         for (NodoAST s : sentencias) {
             if (s == null) continue;
             try {
@@ -38,7 +67,6 @@ public class NodoPrograma extends NodoAST {
             } catch (ReturnException e) {
                 break;
             }
-            // RuntimeException sube a Interprete.ejecutar() y detiene el programa
         }
         return null;
     }

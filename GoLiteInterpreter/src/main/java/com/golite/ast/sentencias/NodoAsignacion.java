@@ -22,6 +22,9 @@ public class NodoAsignacion extends NodoAST {
 
         switch (operador) {
             case "=":
+                if (nuevoValor instanceof java.util.ArrayList) {
+                    nuevoValor = new java.util.ArrayList<>((java.util.ArrayList<?>) nuevoValor);
+                }
                 Entorno.getInstancia().asignar(nombre, nuevoValor, linea, columna);
                 break;
             case "+=":
