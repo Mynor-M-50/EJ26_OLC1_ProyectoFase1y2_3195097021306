@@ -19,7 +19,6 @@ import java.nio.file.*;
 
 public class VentanaPrincipal extends JFrame {
 
-    // Cada tab tiene su propio editor y archivo
     private static class Tab {
         JTextArea editorArea;
         JTextArea lineNumbers;
@@ -62,7 +61,6 @@ public class VentanaPrincipal extends JFrame {
         inicializarVentana();
         crearComponentes();
         crearMenu();
-        // Abrir con una tab vaciia por defecto
         nuevaTab();
     }
 
@@ -76,13 +74,11 @@ public class VentanaPrincipal extends JFrame {
     private void crearComponentes() {
         JPanel panelPrincipal = new JPanel(new BorderLayout());
 
-        // TABS
         tabbedPane = new JTabbedPane();
         tabbedPane.setBackground(new Color(45, 45, 45));
         tabbedPane.setForeground(Color.WHITE);
         tabbedPane.addChangeListener(e -> actualizarStatusBar());
 
-        // CONSOLA
         consolaArea = new JTextArea();
         consolaArea.setFont(new Font("Monospaced", Font.PLAIN, 13));
         consolaArea.setBackground(new Color(20, 20, 20));
@@ -112,7 +108,6 @@ public class VentanaPrincipal extends JFrame {
     private void crearMenu() {
         JMenuBar menuBar = new JMenuBar();
 
-        // ARCHIVO
         JMenu menuArchivo = new JMenu("Archivo");
 
         JMenuItem itemNuevo = new JMenuItem("Nuevo");
@@ -142,7 +137,6 @@ public class VentanaPrincipal extends JFrame {
         menuArchivo.addSeparator();
         menuArchivo.add(itemCerrarTab);
 
-        // EJECUTAR
         JMenu menuEjecutar = new JMenu("Ejecutar");
 
         JMenuItem itemEjecutar = new JMenuItem("Ejecutar");
@@ -155,7 +149,6 @@ public class VentanaPrincipal extends JFrame {
         menuEjecutar.add(itemEjecutar);
         menuEjecutar.add(itemLimpiar);
 
-        // REPORTES
         JMenu menuReportes = new JMenu("Reportes");
 
         JMenuItem itemTokens = new JMenuItem("Tabla de Tokens");
@@ -181,8 +174,6 @@ public class VentanaPrincipal extends JFrame {
         setJMenuBar(menuBar);
     }
 
-    // GESTION DE TABS
-
     private void nuevaTab() {
         Tab tab = new Tab();
         agregarTab(tab);
@@ -191,7 +182,6 @@ public class VentanaPrincipal extends JFrame {
     private void agregarTab(Tab tab) {
         JScrollPane scroll = tab.crearScroll();
 
-        // Actualizar nmeros de linea y statusbar al escribir
         tab.editorArea.addKeyListener(new KeyAdapter() {
             @Override
             public void keyReleased(KeyEvent e) {
@@ -201,7 +191,6 @@ public class VentanaPrincipal extends JFrame {
         });
 
         tabbedPane.addTab(tab.getNombre(), scroll);
-        // Guardar la tab en el componente para recuperarla despus
         scroll.putClientProperty("tab", tab);
         tabbedPane.setSelectedIndex(tabbedPane.getTabCount() - 1);
         setTitle("GoLite IDE - " + tab.getNombre());
@@ -218,7 +207,6 @@ public class VentanaPrincipal extends JFrame {
         int idx = tabbedPane.getSelectedIndex();
         if (idx == -1) return;
         if (tabbedPane.getTabCount() == 1) {
-            // Si es la ultima tab, limpiarla en lugar de cerrarla
             Tab tab = getTabActual();
             if (tab != null) {
                 tab.editorArea.setText("");
@@ -231,8 +219,6 @@ public class VentanaPrincipal extends JFrame {
         tabbedPane.removeTabAt(idx);
         setTitle("GoLite IDE - " + (getTabActual() != null ? getTabActual().getNombre() : ""));
     }
-
-    // ACCIONES
 
     private void nuevoArchivo() {
         nuevaTab();
@@ -393,14 +379,14 @@ public class VentanaPrincipal extends JFrame {
     }
 
     private void mostrarReporteDOT(String titulo, String dot) {
-        // 1. Crear carpeta reportes/ junto al JAR o en el directorio de trabajo
         java.io.File carpeta = new java.io.File("reportes");
         carpeta.mkdirs();
 
         java.io.File archivoDot = new java.io.File(carpeta, "ast.dot");
         java.io.File archivoPng = new java.io.File(carpeta, "ast.png");
+        java.io.File archivoSvg = new java.io.File(carpeta, "ast.svg");
 
-        // 2. Escribir el .dot
+        // Escribir el .dot
         try {
             java.nio.file.Files.writeString(archivoDot.toPath(), dot);
         } catch (Exception ex) {
@@ -408,7 +394,7 @@ public class VentanaPrincipal extends JFrame {
             return;
         }
 
-        // 3. Ejecutar dot -Tpng para generar el PNG
+        // Generar PNG
         boolean pngGenerado = false;
         try {
             ProcessBuilder pb = new ProcessBuilder(
@@ -421,35 +407,75 @@ public class VentanaPrincipal extends JFrame {
             proc.waitFor();
             pngGenerado = archivoPng.exists() && archivoPng.length() > 0;
         } catch (Exception ex) {
-            // dot no disponible — seguimos con solo el texto
+            // dot no disponible
         }
 
-        // 4. Construir la ventana
+        // Generar SVG
+        boolean svgGenerado = false;
+        try {
+            ProcessBuilder pb = new ProcessBuilder(
+                    "dot", "-Tsvg",
+                    archivoDot.getAbsolutePath(),
+                    "-o", archivoSvg.getAbsolutePath()
+            );
+            pb.redirectErrorStream(true);
+            Process proc = pb.start();
+            proc.waitFor();
+            svgGenerado = archivoSvg.exists() && archivoSvg.length() > 0;
+        } catch (Exception ex) {
+            // dot no disponible
+        }
+
+        // Construir ventana
         JFrame frame = new JFrame(titulo);
         frame.setSize(900, 650);
         frame.setLocationRelativeTo(this);
 
         JTabbedPane tabs = new JTabbedPane();
 
-        // Tab 1: imagen PNG (si se genero)
+        // Tab 1: imagen PNG
         if (pngGenerado) {
             ImageIcon icono = new ImageIcon(archivoPng.getAbsolutePath());
             JLabel lblImg = new JLabel(icono);
             JScrollPane scrollImg = new JScrollPane(lblImg);
-            tabs.addTab("Imagen AST", scrollImg);
+            tabs.addTab("Imagen AST (PNG)", scrollImg);
         }
 
-        // Tab 2: texto DOT para copiar/pegar online
+        // Tab 2: SVG en navegador
+        if (svgGenerado) {
+            JPanel panelSvg = new JPanel(new BorderLayout());
+            JLabel lblSvg = new JLabel("SVG generado. Abrelo en tu navegador para mejor visualizacion.", SwingConstants.CENTER);
+            lblSvg.setFont(new Font("Monospaced", Font.PLAIN, 13));
+            JButton btnAbrirSvg = new JButton("Abrir AST en navegador (SVG)");
+            btnAbrirSvg.addActionListener(e -> {
+                try {
+                    java.awt.Desktop.getDesktop().browse(archivoSvg.toURI());
+                } catch (Exception ex) {
+                    JOptionPane.showMessageDialog(frame, "No se pudo abrir: " + ex.getMessage());
+                }
+            });
+            JPanel centro = new JPanel();
+            centro.setLayout(new BoxLayout(centro, BoxLayout.Y_AXIS));
+            lblSvg.setAlignmentX(Component.CENTER_ALIGNMENT);
+            btnAbrirSvg.setAlignmentX(Component.CENTER_ALIGNMENT);
+            centro.add(Box.createVerticalGlue());
+            centro.add(lblSvg);
+            centro.add(Box.createRigidArea(new Dimension(0, 15)));
+            centro.add(btnAbrirSvg);
+            centro.add(Box.createVerticalGlue());
+            panelSvg.add(centro, BorderLayout.CENTER);
+            tabs.addTab("Imagen AST (SVG)", panelSvg);
+        }
+
+        // Tab 3: codigo DOT
         JTextArea area = new JTextArea(dot);
         area.setFont(new Font("Monospaced", Font.PLAIN, 12));
         area.setEditable(false);
         tabs.addTab("Codigo DOT", new JScrollPane(area));
 
-        // Panel inferior con info y boton
+        // Panel inferior
         JPanel panelBtn = new JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.LEFT, 10, 5));
-        if (pngGenerado) {
-            panelBtn.add(new JLabel("PNG guardado en: " + archivoPng.getAbsolutePath()));
-        } else {
+        if (!pngGenerado && !svgGenerado) {
             panelBtn.add(new JLabel("Pega el DOT en: https://dreampuf.github.io/GraphvizOnline"));
         }
         JButton btnCopiar = new JButton("Copiar DOT");
