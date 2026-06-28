@@ -22,4 +22,6 @@ replay_pid*
 *.iml
 
 # Maven
-target/
+target/GoLiteInterpreter/target/
+GoLiteInterpreter/reportes/
+GoLiteInterpreter/target/
